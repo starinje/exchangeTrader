@@ -34,61 +34,133 @@ main()
 
 async function main(){
 
-  const timeDelta = 2000
-  const tradeThreshhold = .01
-
   logger.info('running arbitrage strategy...')
+
+  logger.info(`timeDelta is ${config.timeDelta}`)
+  logger.info(`tradeThreshold is ${config.tradeThreshold}`)
+
+  
   let orderBookGemini = await geminiService.getOrderBook()
   let orderBookGdax = await gdaxService.getOrderBook()
-  logger.info(orderBookGemini)
-  logger.info(orderBookGdax)
 
-  let actions = determineAction(orderBookGemini, orderBookGdax)
+  let orderBooks = {
+    gdax: orderBookGdax,
+    gemini: orderBookGemini
+  }
 
-  let results = execute(action)
+  let actions = determineAction(orderBooks)
+
+  console.log('actions: ', actions)
+
+  // let results = execute(action)
 
 
-  await Promise.delay(timeDelta)
+  await Promise.delay(config.timeDelta)
   main()
 }
 
 
-async function determineAction(orderBookExchangeA, orderBookExchangeB){
+function determineAction(orderBooks){
 
-  // compare order books and calculate action
-  // if sell price at higher exchange is more than x percent higher than 
-  // buy price on lower exchange then sell the one direction
+  const ethereumTradingQuantity = config.ethereumTradingQuantity
+  const tradeThreshold = config.tradeThreshold
 
-  let action = {
-    [`${orderBookA.exchange}`] : {
-      action: 'sell',
-      units: 'eth',
-      rate: 225
-    },
-     [`${orderBookB.exchange}`]: {
-      action: 'buy',
-      units: 'eth',
-      rate: 220
+  let bidPriceGemini = calculateBidPrice(orderBooks.gemini.bids, ethereumTradingQuantity)
+  let bidPriceGdax = calculateBidPrice(orderBooks.gdax.bids, ethereumTradingQuantity)
+
+  let askPriceGemini = calculateAskPrice(orderBooks.gemini.asks, ethereumTradingQuantity)
+  let askPriceGdax = calculateAskPrice(orderBooks.gdax.asks, ethereumTradingQuantity)
+
+  let actions
+
+  if(bidPriceGdax > (askPriceGemini + tradeThreshold)){
+    actions = {
+      gdax : {
+        action: 'sell',
+        quantity: ethereumTradingQuantity,
+        units: 'eth',
+        rate: bidPriceGdax
+      },
+      gemini: {
+        action: 'buy',
+        quantity: ethereumTradingQuantity,
+        units: 'eth',
+        rate: askPriceGemini
+      }
     }
+  } else if (bidPriceGemini > (askPriceGdax + tradeThreshold)) {
+    actions = {
+      gemini: {
+        action: 'sell',
+        quantity: ethereumTradingQuantity,
+        units: 'eth',
+        rate: bidPriceGemini
+      },
+      gdax : {
+        action: 'buy',
+        quantity: ethereumTradingQuantity,
+        units: 'eth',
+        rate: askPriceGdax
+      }
+    }
+  } else{
+    actions = 'no trade opportunity'
+    return action
   }
 
-  return action
+  let exchangeWithEthereumBalance = determineEthereumBalance()
+  // console.log('action: ', action)
 
+
+  console.log(actions[exchangeWithEthereumBalance].action)
+  if(actions[exchangeWithEthereumBalance].action == 'sell'){
+    return actions
+  } else {
+    return 'no trade opportunity'
+  }
 }
 
 async function execute(action){
 
-  let results = 
+  // let results = 
 
-  // iterate over action object
-  // sell on one exchange
-  // and buy on the other
+  // // iterate over action object
+  // // sell on one exchange
+  // // and buy on the other
 
 
 
   
-  return actionCompleted
+  // return actionCompleted
 
 }
 
+
+
+function determineEthereumBalance(){
+
+  // check balances on both exchanges
+  // return name of exchange with ethereum balance (account to sell from)
+  return 'gdax'
+
+}
+
+function calculateBidPrice(bids, ethereumTradingQuantity){
+
+  let priceLevel = bids.find((bid) => {
+    return parseFloat(bid.amount) >= ethereumTradingQuantity
+  })
+
+  return priceLevel.price
+}
+
+function calculateAskPrice(asks, ethereumTradingQuantity){
+
+  let priceLevel = asks.find((ask) => {
+    return parseFloat(ask.amount) >= ethereumTradingQuantity
+  })
+
+
+  return priceLevel.price
+}
 

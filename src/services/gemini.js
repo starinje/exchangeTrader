@@ -19,12 +19,27 @@ export default class GeminiService {
             }
 
             let orderBook = await this.session(requestOptions)
-            // reformat order book into standard format
+
+            let timestamp = orderBook.bids[0].timestamp
+
+            const bids = orderBook.bids.map((bidLevel) => {
+                return {
+                    price: bidLevel.price,
+                    amount: bidLevel.amount
+                }
+            })
+
+            const asks = orderBook.asks.map((askLevel) => {
+                return {
+                    price: askLevel.price,
+                    amount: askLevel.amount
+                }
+            })
+
             return {
-                exchange: 'gemini',
-                asks: [],
-                sells: [],
-                timeStamp: 'timestamp'
+                asks: asks,
+                bids: bids,
+                timeStamp: timestamp
             }
 
         } catch(err){

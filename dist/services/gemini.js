@@ -20,7 +20,7 @@ var GeminiService = function GeminiService(options) {
     _classCallCheck(this, GeminiService);
 
     this.getOrderBook = _asyncToGenerator(regeneratorRuntime.mark(function _callee() {
-        var requestOptions, orderBook;
+        var requestOptions, orderBook, timestamp, bids, asks;
         return regeneratorRuntime.wrap(function _callee$(_context) {
             while (1) {
                 switch (_context.prev = _context.next) {
@@ -34,20 +34,37 @@ var GeminiService = function GeminiService(options) {
 
                     case 4:
                         orderBook = _context.sent;
-                        return _context.abrupt('return', orderBook);
+                        timestamp = orderBook.bids[0].timestamp;
+                        bids = orderBook.bids.map(function (bidLevel) {
+                            return {
+                                price: bidLevel.price,
+                                amount: bidLevel.amount
+                            };
+                        });
+                        asks = orderBook.asks.map(function (askLevel) {
+                            return {
+                                price: askLevel.price,
+                                amount: askLevel.amount
+                            };
+                        });
+                        return _context.abrupt('return', {
+                            asks: asks,
+                            bids: bids,
+                            timeStamp: timestamp
+                        });
 
-                    case 8:
-                        _context.prev = 8;
+                    case 11:
+                        _context.prev = 11;
                         _context.t0 = _context['catch'](0);
 
                         console.log(_context.t0);
 
-                    case 11:
+                    case 14:
                     case 'end':
                         return _context.stop();
                 }
             }
-        }, _callee, _this, [[0, 8]]);
+        }, _callee, _this, [[0, 11]]);
     }));
 
     this.options = options || {};

@@ -20,7 +20,7 @@ var GdaxService = function GdaxService(options) {
     _classCallCheck(this, GdaxService);
 
     this.getOrderBook = _asyncToGenerator(regeneratorRuntime.mark(function _callee() {
-        var requestOptions, orderBook;
+        var requestOptions, orderBook, bids, asks;
         return regeneratorRuntime.wrap(function _callee$(_context) {
             while (1) {
                 switch (_context.prev = _context.next) {
@@ -34,20 +34,39 @@ var GdaxService = function GdaxService(options) {
 
                     case 4:
                         orderBook = _context.sent;
-                        return _context.abrupt('return', orderBook);
+                        bids = orderBook.bids.map(function (bidLevel) {
+                            return {
+                                price: bidLevel[0],
+                                amount: bidLevel[1]
+                            };
+                        });
+                        asks = orderBook.asks.map(function (askLevel) {
+                            return {
+                                price: askLevel[0],
+                                amount: askLevel[1]
+                            };
+                        });
 
-                    case 8:
-                        _context.prev = 8;
+                        // reformat order book into standard format
+
+                        return _context.abrupt('return', {
+                            asks: asks,
+                            bids: bids,
+                            timeStamp: 'timestamp'
+                        });
+
+                    case 10:
+                        _context.prev = 10;
                         _context.t0 = _context['catch'](0);
 
                         console.log(_context.t0);
 
-                    case 11:
+                    case 13:
                     case 'end':
                         return _context.stop();
                 }
             }
-        }, _callee, _this, [[0, 8]]);
+        }, _callee, _this, [[0, 10]]);
     }));
 
     this.options = options || {};
