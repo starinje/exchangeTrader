@@ -7,21 +7,22 @@ var main = function () {
       while (1) {
         switch (_context.prev = _context.next) {
           case 0:
+            _context.prev = 0;
 
             logger.info('running arbitrage strategy...');
 
             logger.info('timeDelta is ' + _config2.default.timeDelta);
             logger.info('tradeThreshold is ' + _config2.default.tradeThreshold);
 
-            _context.next = 5;
+            _context.next = 6;
             return geminiService.getOrderBook();
 
-          case 5:
+          case 6:
             orderBookGemini = _context.sent;
-            _context.next = 8;
+            _context.next = 9;
             return gdaxService.getOrderBook();
 
-          case 8:
+          case 9:
             orderBookGdax = _context.sent;
             orderBooks = {
               gdax: orderBookGdax,
@@ -34,19 +35,27 @@ var main = function () {
 
             // let results = execute(action)
 
-
-            _context.next = 14;
+            _context.next = 15;
             return _bluebird2.default.delay(_config2.default.timeDelta);
 
-          case 14:
+          case 15:
             main();
 
-          case 15:
+            _context.next = 21;
+            break;
+
+          case 18:
+            _context.prev = 18;
+            _context.t0 = _context['catch'](0);
+
+            logger.info('error: ' + _context.t0);
+
+          case 21:
           case 'end':
             return _context.stop();
         }
       }
-    }, _callee, this);
+    }, _callee, this, [[0, 18]]);
   }));
 
   return function main() {
@@ -60,6 +69,9 @@ var execute = function () {
       while (1) {
         switch (_context2.prev = _context2.next) {
           case 0:
+            return _context2.abrupt('return', actionCompleted);
+
+          case 1:
           case 'end':
             return _context2.stop();
         }
@@ -126,6 +138,8 @@ var geminiService = new _gemini2.default(_config2.default.gemini);
 
 var TIMESTAMP_FORMAT = 'HH:mm:ss.SSS';
 
+var aggregateProfit = 0;
+
 // Initialize logger
 var logger = new _winston2.default.Logger().add(_winston2.default.transports.Console, {
   timestamp: function timestamp() {
@@ -141,17 +155,50 @@ main();
 function determineAction(orderBooks) {
 
   var ethereumTradingQuantity = _config2.default.ethereumTradingQuantity;
-  var tradeThreshold = _config2.default.tradeThreshold;
+  var takeProfitTradeThreshold = _config2.default.takeProfitTradeThreshold;
+  var swapFundsTradeThreshold = _config2.default.swapFundsTradeThreshold;
 
   var bidPriceGemini = calculateBidPrice(orderBooks.gemini.bids, ethereumTradingQuantity);
   var bidPriceGdax = calculateBidPrice(orderBooks.gdax.bids, ethereumTradingQuantity);
-
   var askPriceGemini = calculateAskPrice(orderBooks.gemini.asks, ethereumTradingQuantity);
   var askPriceGdax = calculateAskPrice(orderBooks.gdax.asks, ethereumTradingQuantity);
 
-  var actions = void 0;
+  logger.info('bidPriceGemini: ' + bidPriceGemini);
+  logger.info('bidPriceGdax: ' + bidPriceGdax);
+  logger.info('askPriceGemini: ' + askPriceGemini);
+  logger.info('askPriceGdax: ' + askPriceGdax);
 
-  if (bidPriceGdax > askPriceGemini + tradeThreshold) {
+  var transactionPercentageGemini = _config2.default.transactionPercentageGemini;
+  var transactionPercentageGdax = _config2.default.transactionPercentageGdax;
+
+  var gdaxBasePercentageDifference = (bidPriceGdax - askPriceGemini) / askPriceGemini * 100;
+  var geminiBasePercentageDifference = (bidPriceGemini - askPriceGdax) / askPriceGdax * 100;
+
+  var gdaxRateIsHigherAndProfitable = gdaxBasePercentageDifference > takeProfitTradeThreshold;
+  var geminiRateIsHigherAndProfitable = geminiBasePercentageDifference > swapFundsTradeThreshold;
+
+  var actions = void 0;
+  var estimatedTransactionFees = void 0;
+  var estimatedGrossProfit = void 0;
+  var estimatedNetProfit = void 0;
+
+  logger.info('gdaxBasePercentageDifference: ' + gdaxBasePercentageDifference);
+  logger.info('geminiBasePercentageDifference: ' + geminiBasePercentageDifference);
+
+  if (gdaxRateIsHigherAndProfitable) {
+
+    var totalSaleValue = bidPriceGdax * ethereumTradingQuantity;
+    var totalPurchaseCost = askPriceGemini * ethereumTradingQuantity;
+    estimatedGrossProfit = totalSaleValue - totalPurchaseCost;
+    estimatedTransactionFees = transactionPercentageGdax / 100 * totalSaleValue + transactionPercentageGemini / 100 * totalPurchaseCost;
+    estimatedNetProfit = estimatedGrossProfit - estimatedTransactionFees;
+
+    logger.info('total sale value: ' + totalSaleValue);
+    logger.info('total purchase cost: ' + totalPurchaseCost);
+    logger.info('estimated gross profit: ' + estimatedGrossProfit);
+    logger.info('estimated transaction fees: ' + estimatedTransactionFees);
+    logger.info('estimated net profit: ' + estimatedNetProfit);
+
     actions = {
       gdax: {
         action: 'sell',
@@ -166,7 +213,20 @@ function determineAction(orderBooks) {
         rate: askPriceGemini
       }
     };
-  } else if (bidPriceGemini > askPriceGdax + tradeThreshold) {
+  } else if (geminiRateIsHigherAndProfitable) {
+
+    var _totalSaleValue = bidPriceGemini * ethereumTradingQuantity;
+    var _totalPurchaseCost = askPriceGdax * ethereumTradingQuantity;
+    estimatedGrossProfit = _totalSaleValue - _totalPurchaseCost;
+    estimatedTransactionFees = transactionPercentageGemini * _totalSaleValue + transactionPercentageGdax * _totalPurchaseCost;
+    estimatedNetProfit = estimatedGrossProfit - estimatedTransactionFees;
+
+    logger.info('total sale value: ' + _totalSaleValue);
+    logger.info('total purchase cost: ' + _totalPurchaseCost);
+    logger.info('estimated gross profit: ' + estimatedGrossProfit);
+    logger.info('estimated transaction fees: ' + estimatedTransactionFees);
+    logger.info('estimated net profit: ' + estimatedNetProfit);
+
     actions = {
       gemini: {
         action: 'sell',
@@ -183,12 +243,10 @@ function determineAction(orderBooks) {
     };
   } else {
     actions = 'no trade opportunity';
-    return action;
+    return actions;
   }
 
   var exchangeWithEthereumBalance = determineEthereumBalance();
-  // console.log('action: ', action)
-
 
   console.log(actions[exchangeWithEthereumBalance].action);
   if (actions[exchangeWithEthereumBalance].action == 'sell') {
@@ -211,7 +269,7 @@ function calculateBidPrice(bids, ethereumTradingQuantity) {
     return parseFloat(bid.amount) >= ethereumTradingQuantity;
   });
 
-  return priceLevel.price;
+  return parseFloat(priceLevel.price);
 }
 
 function calculateAskPrice(asks, ethereumTradingQuantity) {
@@ -220,6 +278,6 @@ function calculateAskPrice(asks, ethereumTradingQuantity) {
     return parseFloat(ask.amount) >= ethereumTradingQuantity;
   });
 
-  return priceLevel.price;
+  return parseFloat(priceLevel.price);
 }
 //# sourceMappingURL=index.js.map

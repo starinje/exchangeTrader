@@ -7,8 +7,11 @@ module.exports = {
     gdax: {
         url: 'https://api.gdax.com/products/ETH-USD/book?level=2'
     },
-    ethereumTradingQuantity: 5,
-    tradeThreshold: 1.5,
-    timeDelta: 2000
+    ethereumTradingQuantity: 40,
+    takeProfitTradeThreshold: .8,
+    swapFundsTradeThreshold: -.5,
+    timeDelta: 2000,
+    transactionPercentageGemini: .3,
+    transactionPercentageGdax: .3
 };
 //# sourceMappingURL=config.js.map
