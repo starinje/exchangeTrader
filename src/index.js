@@ -1,6 +1,4 @@
-// Poloniex API documentation: https://poloniex.com/support/api/
 import fs from 'fs'
-
 import autobahn from 'autobahn'
 import program from 'commander'
 import moment from 'moment'
@@ -14,14 +12,7 @@ import config from './config'
 import GdaxService from './services/gdax'
 import GeminiService from './services/gemini'
 
-
-const gdaxService = new GdaxService(config.gdax)
-const geminiService = new GeminiService(config.gemini)
-
 const TIMESTAMP_FORMAT = 'HH:mm:ss.SSS'
-
-let aggregateProfit = 0
-
 
 // Initialize logger
 const logger = new winston.Logger().add(winston.transports.Console, {
@@ -31,18 +22,20 @@ const logger = new winston.Logger().add(winston.transports.Console, {
     level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
 })
 
+const gdaxService = new GdaxService({...config.gdax, logger})
+const geminiService = new GeminiService({...config.gemini, logger})
+
+let aggregateProfit = 0
 
 main()
 
 async function main(){
 
   try {
+    console.log('')
+    console.log('')
     logger.info('running arbitrage strategy...')
 
-    logger.info(`timeDelta is ${config.timeDelta}`)
-    logger.info(`tradeThreshold is ${config.tradeThreshold}`)
-
-    
     let orderBookGemini = await geminiService.getOrderBook()
     let orderBookGdax = await gdaxService.getOrderBook()
 
@@ -51,23 +44,25 @@ async function main(){
       gemini: orderBookGemini
     }
 
-    let actions = determineAction(orderBooks)
+    let positionChange = await determinePositionChange(orderBooks)
 
-    console.log('actions: ', actions)
+    if(positionChange == 'none'){
+      return 
+    }
+    
+    // let results = await execute(positionChange)
 
-    // let results = execute(action)
-
-    await Promise.delay(config.timeDelta)
-    main()
-
+    
   } catch(err){
     logger.info(`error: ${err}`)
+  } finally{
+    await Promise.delay(config.timeDelta)
+    main()
   }
 
 }
 
-
-function determineAction(orderBooks){
+async function determinePositionChange(orderBooks){
 
   const ethereumTradingQuantity = config.ethereumTradingQuantity
   const takeProfitTradeThreshold = config.takeProfitTradeThreshold
@@ -90,9 +85,9 @@ function determineAction(orderBooks){
   const geminiBasePercentageDifference = ((bidPriceGemini - askPriceGdax)/askPriceGdax)*100
 
   const gdaxRateIsHigherAndProfitable = gdaxBasePercentageDifference > takeProfitTradeThreshold
-  const geminiRateIsHigherAndProfitable = geminiBasePercentageDifference > swapFundsTradeThreshold
+  const geminiRateIsSwappable = geminiBasePercentageDifference > swapFundsTradeThreshold
 
-  let actions
+  let positionChange
   let estimatedTransactionFees
   let estimatedGrossProfit
   let estimatedNetProfit
@@ -101,20 +96,22 @@ function determineAction(orderBooks){
   logger.info(`geminiBasePercentageDifference: ${geminiBasePercentageDifference}`)
 
   if(gdaxRateIsHigherAndProfitable){
+    logger.info('gdax rate is higher and profitable')
 
-    let totalSaleValue = bidPriceGdax*ethereumTradingQuantity
+    let talSaleValue = bidPriceGdax*ethereumTradingQuantity
     let totalPurchaseCost = askPriceGemini*ethereumTradingQuantity
     estimatedGrossProfit = totalSaleValue-totalPurchaseCost
     estimatedTransactionFees = ((transactionPercentageGdax/100)*totalSaleValue) + ((transactionPercentageGemini/100)*totalPurchaseCost)
     estimatedNetProfit = estimatedGrossProfit - estimatedTransactionFees
     
-    logger.info(`total sale value: ${totalSaleValue}`)
-    logger.info(`total purchase cost: ${totalPurchaseCost}`)
+    logger.info(`estimated total sale value: ${totalSaleValue}`)
+    logger.info(`estimated total purchase cost: ${totalPurchaseCost}`)
     logger.info(`estimated gross profit: ${estimatedGrossProfit}`)
     logger.info(`estimated transaction fees: ${estimatedTransactionFees}`)
     logger.info(`estimated net profit: ${estimatedNetProfit}`)
 
-    actions = {
+    positionChange = {
+      type: 'takeProfit',
       gdax : {
         action: 'sell',
         quantity: ethereumTradingQuantity,
@@ -128,21 +125,23 @@ function determineAction(orderBooks){
         rate: askPriceGemini
       }
     }
-  } else if (geminiRateIsHigherAndProfitable) {
+  } else if (geminiRateIsSwappable) {
+    logger.info('Gemini Rate Is Swappable')
 
     let totalSaleValue = bidPriceGemini*ethereumTradingQuantity
     let totalPurchaseCost = askPriceGdax*ethereumTradingQuantity
     estimatedGrossProfit = totalSaleValue-totalPurchaseCost
-    estimatedTransactionFees = (transactionPercentageGemini*totalSaleValue) + (transactionPercentageGdax*totalPurchaseCost)
+    estimatedTransactionFees = ((transactionPercentageGemini/100)*totalSaleValue) + ((transactionPercentageGdax/100)*totalPurchaseCost)
     estimatedNetProfit = estimatedGrossProfit - estimatedTransactionFees
     
-    logger.info(`total sale value: ${totalSaleValue}`)
-    logger.info(`total purchase cost: ${totalPurchaseCost}`)
+    logger.info(`estimated total sale value: ${totalSaleValue}`)
+    logger.info(`estimated total purchase cost: ${totalPurchaseCost}`)
     logger.info(`estimated gross profit: ${estimatedGrossProfit}`)
     logger.info(`estimated transaction fees: ${estimatedTransactionFees}`)
     logger.info(`estimated net profit: ${estimatedNetProfit}`)
 
-    actions = {
+    positionChange= {
+      type: 'swapFunds',
       gemini: {
         action: 'sell',
         quantity: ethereumTradingQuantity,
@@ -156,43 +155,37 @@ function determineAction(orderBooks){
         rate: askPriceGdax
       }
     }
-  } else{
-    actions = 'no trade opportunity'
-    return actions
-  }
-
-  let exchangeWithEthereumBalance = determineEthereumBalance()
-  
-  console.log(actions[exchangeWithEthereumBalance].action)
-  if(actions[exchangeWithEthereumBalance].action == 'sell'){
-    return actions
   } else {
-    return 'no trade opportunity'
+    positionChange = 'none'
+    return positionChange
+  }
+
+  let exchangeWithEthereumBalance = await determineEthereumBalance()
+  
+  if(positionChange[exchangeWithEthereumBalance].action == 'sell'){
+    return positionChange
+  } else {
+    return 'none'
   }
 }
 
-async function execute(action){
+async function execute(positionChange){
 
-  // let results = 
+  let tradeResults = await Promise.all([geminiService.executeTrade(positionChange.gemini), gdaxService.executeTrade(positionChange.gdax)])
 
-  // // iterate over action object
-  // // sell on one exchange
-  // // and buy on the other
-
-
-
+  let tradeLog = {
+    ...tradeResults,
+    type: positionChange.type
+  }
   
-  return actionCompleted
-
+  return tradeLog
 }
 
-
-
-function determineEthereumBalance(){
+async function determineEthereumBalance(){
 
   // check balances on both exchanges
   // return name of exchange with ethereum balance (account to sell from)
-  return 'gdax'
+  return 'gemini'
 
 }
 
@@ -202,7 +195,7 @@ function calculateBidPrice(bids, ethereumTradingQuantity){
     return parseFloat(bid.amount) >= ethereumTradingQuantity
   })
 
-  return parseFloat(priceLevel.price)
+  return priceLevel ? parseFloat(priceLevel.price) : 'no match found'
 }
 
 function calculateAskPrice(asks, ethereumTradingQuantity){
@@ -211,7 +204,6 @@ function calculateAskPrice(asks, ethereumTradingQuantity){
     return parseFloat(ask.amount) >= ethereumTradingQuantity
   })
 
-
-  return parseFloat(priceLevel.price)
+  return priceLevel ? parseFloat(priceLevel.price) : 'no match found'
 }
 

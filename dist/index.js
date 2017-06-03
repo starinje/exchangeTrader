@@ -1,18 +1,19 @@
 'use strict';
 
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
 var main = function () {
   var _ref = _asyncToGenerator(regeneratorRuntime.mark(function _callee() {
-    var orderBookGemini, orderBookGdax, orderBooks, actions;
+    var orderBookGemini, orderBookGdax, orderBooks, positionChange;
     return regeneratorRuntime.wrap(function _callee$(_context) {
       while (1) {
         switch (_context.prev = _context.next) {
           case 0:
             _context.prev = 0;
 
+            console.log('');
+            console.log('');
             logger.info('running arbitrage strategy...');
-
-            logger.info('timeDelta is ' + _config2.default.timeDelta);
-            logger.info('tradeThreshold is ' + _config2.default.tradeThreshold);
 
             _context.next = 6;
             return geminiService.getOrderBook();
@@ -28,19 +29,20 @@ var main = function () {
               gdax: orderBookGdax,
               gemini: orderBookGemini
             };
-            actions = determineAction(orderBooks);
+            _context.next = 13;
+            return determinePositionChange(orderBooks);
 
+          case 13:
+            positionChange = _context.sent;
 
-            console.log('actions: ', actions);
+            if (!(positionChange == 'none')) {
+              _context.next = 16;
+              break;
+            }
 
-            // let results = execute(action)
+            return _context.abrupt('return');
 
-            _context.next = 15;
-            return _bluebird2.default.delay(_config2.default.timeDelta);
-
-          case 15:
-            main();
-
+          case 16:
             _context.next = 21;
             break;
 
@@ -51,11 +53,20 @@ var main = function () {
             logger.info('error: ' + _context.t0);
 
           case 21:
+            _context.prev = 21;
+            _context.next = 24;
+            return _bluebird2.default.delay(_config2.default.timeDelta);
+
+          case 24:
+            main();
+            return _context.finish(21);
+
+          case 26:
           case 'end':
             return _context.stop();
         }
       }
-    }, _callee, this, [[0, 18]]);
+    }, _callee, this, [[0, 18, 21, 26]]);
   }));
 
   return function main() {
@@ -63,15 +74,142 @@ var main = function () {
   };
 }();
 
-var execute = function () {
-  var _ref2 = _asyncToGenerator(regeneratorRuntime.mark(function _callee2(action) {
+var determinePositionChange = function () {
+  var _ref2 = _asyncToGenerator(regeneratorRuntime.mark(function _callee2(orderBooks) {
+    var ethereumTradingQuantity, takeProfitTradeThreshold, swapFundsTradeThreshold, bidPriceGemini, bidPriceGdax, askPriceGemini, askPriceGdax, transactionPercentageGemini, transactionPercentageGdax, gdaxBasePercentageDifference, geminiBasePercentageDifference, gdaxRateIsHigherAndProfitable, geminiRateIsSwappable, positionChange, estimatedTransactionFees, estimatedGrossProfit, estimatedNetProfit, talSaleValue, totalPurchaseCost, _totalSaleValue, _totalPurchaseCost, exchangeWithEthereumBalance;
+
     return regeneratorRuntime.wrap(function _callee2$(_context2) {
       while (1) {
         switch (_context2.prev = _context2.next) {
           case 0:
-            return _context2.abrupt('return', actionCompleted);
+            ethereumTradingQuantity = _config2.default.ethereumTradingQuantity;
+            takeProfitTradeThreshold = _config2.default.takeProfitTradeThreshold;
+            swapFundsTradeThreshold = _config2.default.swapFundsTradeThreshold;
+            bidPriceGemini = calculateBidPrice(orderBooks.gemini.bids, ethereumTradingQuantity);
+            bidPriceGdax = calculateBidPrice(orderBooks.gdax.bids, ethereumTradingQuantity);
+            askPriceGemini = calculateAskPrice(orderBooks.gemini.asks, ethereumTradingQuantity);
+            askPriceGdax = calculateAskPrice(orderBooks.gdax.asks, ethereumTradingQuantity);
 
-          case 1:
+
+            logger.info('bidPriceGemini: ' + bidPriceGemini);
+            logger.info('bidPriceGdax: ' + bidPriceGdax);
+            logger.info('askPriceGemini: ' + askPriceGemini);
+            logger.info('askPriceGdax: ' + askPriceGdax);
+
+            transactionPercentageGemini = _config2.default.transactionPercentageGemini;
+            transactionPercentageGdax = _config2.default.transactionPercentageGdax;
+            gdaxBasePercentageDifference = (bidPriceGdax - askPriceGemini) / askPriceGemini * 100;
+            geminiBasePercentageDifference = (bidPriceGemini - askPriceGdax) / askPriceGdax * 100;
+            gdaxRateIsHigherAndProfitable = gdaxBasePercentageDifference > takeProfitTradeThreshold;
+            geminiRateIsSwappable = geminiBasePercentageDifference > swapFundsTradeThreshold;
+            positionChange = void 0;
+            estimatedTransactionFees = void 0;
+            estimatedGrossProfit = void 0;
+            estimatedNetProfit = void 0;
+
+
+            logger.info('gdaxBasePercentageDifference: ' + gdaxBasePercentageDifference);
+            logger.info('geminiBasePercentageDifference: ' + geminiBasePercentageDifference);
+
+            if (!gdaxRateIsHigherAndProfitable) {
+              _context2.next = 38;
+              break;
+            }
+
+            logger.info('gdax rate is higher and profitable');
+
+            talSaleValue = bidPriceGdax * ethereumTradingQuantity;
+            totalPurchaseCost = askPriceGemini * ethereumTradingQuantity;
+
+            estimatedGrossProfit = totalSaleValue - totalPurchaseCost;
+            estimatedTransactionFees = transactionPercentageGdax / 100 * totalSaleValue + transactionPercentageGemini / 100 * totalPurchaseCost;
+            estimatedNetProfit = estimatedGrossProfit - estimatedTransactionFees;
+
+            logger.info('estimated total sale value: ' + totalSaleValue);
+            logger.info('estimated total purchase cost: ' + totalPurchaseCost);
+            logger.info('estimated gross profit: ' + estimatedGrossProfit);
+            logger.info('estimated transaction fees: ' + estimatedTransactionFees);
+            logger.info('estimated net profit: ' + estimatedNetProfit);
+
+            positionChange = {
+              type: 'takeProfit',
+              gdax: {
+                action: 'sell',
+                quantity: ethereumTradingQuantity,
+                units: 'eth',
+                rate: bidPriceGdax
+              },
+              gemini: {
+                action: 'buy',
+                quantity: ethereumTradingQuantity,
+                units: 'eth',
+                rate: askPriceGemini
+              }
+            };
+            _context2.next = 55;
+            break;
+
+          case 38:
+            if (!geminiRateIsSwappable) {
+              _context2.next = 53;
+              break;
+            }
+
+            logger.info('Gemini Rate Is Swappable');
+
+            _totalSaleValue = bidPriceGemini * ethereumTradingQuantity;
+            _totalPurchaseCost = askPriceGdax * ethereumTradingQuantity;
+
+            estimatedGrossProfit = _totalSaleValue - _totalPurchaseCost;
+            estimatedTransactionFees = transactionPercentageGemini / 100 * _totalSaleValue + transactionPercentageGdax / 100 * _totalPurchaseCost;
+            estimatedNetProfit = estimatedGrossProfit - estimatedTransactionFees;
+
+            logger.info('estimated total sale value: ' + _totalSaleValue);
+            logger.info('estimated total purchase cost: ' + _totalPurchaseCost);
+            logger.info('estimated gross profit: ' + estimatedGrossProfit);
+            logger.info('estimated transaction fees: ' + estimatedTransactionFees);
+            logger.info('estimated net profit: ' + estimatedNetProfit);
+
+            positionChange = {
+              type: 'swapFunds',
+              gemini: {
+                action: 'sell',
+                quantity: ethereumTradingQuantity,
+                units: 'eth',
+                rate: bidPriceGemini
+              },
+              gdax: {
+                action: 'buy',
+                quantity: ethereumTradingQuantity,
+                units: 'eth',
+                rate: askPriceGdax
+              }
+            };
+            _context2.next = 55;
+            break;
+
+          case 53:
+            positionChange = 'none';
+            return _context2.abrupt('return', positionChange);
+
+          case 55:
+            _context2.next = 57;
+            return determineEthereumBalance();
+
+          case 57:
+            exchangeWithEthereumBalance = _context2.sent;
+
+            if (!(positionChange[exchangeWithEthereumBalance].action == 'sell')) {
+              _context2.next = 62;
+              break;
+            }
+
+            return _context2.abrupt('return', positionChange);
+
+          case 62:
+            return _context2.abrupt('return', 'none');
+
+          case 63:
           case 'end':
             return _context2.stop();
         }
@@ -79,8 +217,59 @@ var execute = function () {
     }, _callee2, this);
   }));
 
-  return function execute(_x) {
+  return function determinePositionChange(_x) {
     return _ref2.apply(this, arguments);
+  };
+}();
+
+var execute = function () {
+  var _ref3 = _asyncToGenerator(regeneratorRuntime.mark(function _callee3(positionChange) {
+    var tradeResults, tradeLog;
+    return regeneratorRuntime.wrap(function _callee3$(_context3) {
+      while (1) {
+        switch (_context3.prev = _context3.next) {
+          case 0:
+            _context3.next = 2;
+            return _bluebird2.default.all([geminiService.executeTrade(positionChange.gemini), gdaxService.executeTrade(positionChange.gdax)]);
+
+          case 2:
+            tradeResults = _context3.sent;
+            tradeLog = _extends({}, tradeResults, {
+              type: positionChange.type
+            });
+            return _context3.abrupt('return', tradeLog);
+
+          case 5:
+          case 'end':
+            return _context3.stop();
+        }
+      }
+    }, _callee3, this);
+  }));
+
+  return function execute(_x2) {
+    return _ref3.apply(this, arguments);
+  };
+}();
+
+var determineEthereumBalance = function () {
+  var _ref4 = _asyncToGenerator(regeneratorRuntime.mark(function _callee4() {
+    return regeneratorRuntime.wrap(function _callee4$(_context4) {
+      while (1) {
+        switch (_context4.prev = _context4.next) {
+          case 0:
+            return _context4.abrupt('return', 'gemini');
+
+          case 1:
+          case 'end':
+            return _context4.stop();
+        }
+      }
+    }, _callee4, this);
+  }));
+
+  return function determineEthereumBalance() {
+    return _ref4.apply(this, arguments);
   };
 }();
 
@@ -130,15 +319,9 @@ var _gemini2 = _interopRequireDefault(_gemini);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, arguments); return new _bluebird2.default(function (resolve, reject) { function step(key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { return _bluebird2.default.resolve(value).then(function (value) { step("next", value); }, function (err) { step("throw", err); }); } } return step("next"); }); }; } // Poloniex API documentation: https://poloniex.com/support/api/
-
-
-var gdaxService = new _gdax2.default(_config2.default.gdax);
-var geminiService = new _gemini2.default(_config2.default.gemini);
+function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, arguments); return new _bluebird2.default(function (resolve, reject) { function step(key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { return _bluebird2.default.resolve(value).then(function (value) { step("next", value); }, function (err) { step("throw", err); }); } } return step("next"); }); }; }
 
 var TIMESTAMP_FORMAT = 'HH:mm:ss.SSS';
-
-var aggregateProfit = 0;
 
 // Initialize logger
 var logger = new _winston2.default.Logger().add(_winston2.default.transports.Console, {
@@ -150,118 +333,12 @@ var logger = new _winston2.default.Logger().add(_winston2.default.transports.Con
   level: process.env.NODE_ENV === 'production' ? 'info' : 'debug'
 });
 
+var gdaxService = new _gdax2.default(_extends({}, _config2.default.gdax, { logger: logger }));
+var geminiService = new _gemini2.default(_extends({}, _config2.default.gemini, { logger: logger }));
+
+var aggregateProfit = 0;
+
 main();
-
-function determineAction(orderBooks) {
-
-  var ethereumTradingQuantity = _config2.default.ethereumTradingQuantity;
-  var takeProfitTradeThreshold = _config2.default.takeProfitTradeThreshold;
-  var swapFundsTradeThreshold = _config2.default.swapFundsTradeThreshold;
-
-  var bidPriceGemini = calculateBidPrice(orderBooks.gemini.bids, ethereumTradingQuantity);
-  var bidPriceGdax = calculateBidPrice(orderBooks.gdax.bids, ethereumTradingQuantity);
-  var askPriceGemini = calculateAskPrice(orderBooks.gemini.asks, ethereumTradingQuantity);
-  var askPriceGdax = calculateAskPrice(orderBooks.gdax.asks, ethereumTradingQuantity);
-
-  logger.info('bidPriceGemini: ' + bidPriceGemini);
-  logger.info('bidPriceGdax: ' + bidPriceGdax);
-  logger.info('askPriceGemini: ' + askPriceGemini);
-  logger.info('askPriceGdax: ' + askPriceGdax);
-
-  var transactionPercentageGemini = _config2.default.transactionPercentageGemini;
-  var transactionPercentageGdax = _config2.default.transactionPercentageGdax;
-
-  var gdaxBasePercentageDifference = (bidPriceGdax - askPriceGemini) / askPriceGemini * 100;
-  var geminiBasePercentageDifference = (bidPriceGemini - askPriceGdax) / askPriceGdax * 100;
-
-  var gdaxRateIsHigherAndProfitable = gdaxBasePercentageDifference > takeProfitTradeThreshold;
-  var geminiRateIsHigherAndProfitable = geminiBasePercentageDifference > swapFundsTradeThreshold;
-
-  var actions = void 0;
-  var estimatedTransactionFees = void 0;
-  var estimatedGrossProfit = void 0;
-  var estimatedNetProfit = void 0;
-
-  logger.info('gdaxBasePercentageDifference: ' + gdaxBasePercentageDifference);
-  logger.info('geminiBasePercentageDifference: ' + geminiBasePercentageDifference);
-
-  if (gdaxRateIsHigherAndProfitable) {
-
-    var totalSaleValue = bidPriceGdax * ethereumTradingQuantity;
-    var totalPurchaseCost = askPriceGemini * ethereumTradingQuantity;
-    estimatedGrossProfit = totalSaleValue - totalPurchaseCost;
-    estimatedTransactionFees = transactionPercentageGdax / 100 * totalSaleValue + transactionPercentageGemini / 100 * totalPurchaseCost;
-    estimatedNetProfit = estimatedGrossProfit - estimatedTransactionFees;
-
-    logger.info('total sale value: ' + totalSaleValue);
-    logger.info('total purchase cost: ' + totalPurchaseCost);
-    logger.info('estimated gross profit: ' + estimatedGrossProfit);
-    logger.info('estimated transaction fees: ' + estimatedTransactionFees);
-    logger.info('estimated net profit: ' + estimatedNetProfit);
-
-    actions = {
-      gdax: {
-        action: 'sell',
-        quantity: ethereumTradingQuantity,
-        units: 'eth',
-        rate: bidPriceGdax
-      },
-      gemini: {
-        action: 'buy',
-        quantity: ethereumTradingQuantity,
-        units: 'eth',
-        rate: askPriceGemini
-      }
-    };
-  } else if (geminiRateIsHigherAndProfitable) {
-
-    var _totalSaleValue = bidPriceGemini * ethereumTradingQuantity;
-    var _totalPurchaseCost = askPriceGdax * ethereumTradingQuantity;
-    estimatedGrossProfit = _totalSaleValue - _totalPurchaseCost;
-    estimatedTransactionFees = transactionPercentageGemini * _totalSaleValue + transactionPercentageGdax * _totalPurchaseCost;
-    estimatedNetProfit = estimatedGrossProfit - estimatedTransactionFees;
-
-    logger.info('total sale value: ' + _totalSaleValue);
-    logger.info('total purchase cost: ' + _totalPurchaseCost);
-    logger.info('estimated gross profit: ' + estimatedGrossProfit);
-    logger.info('estimated transaction fees: ' + estimatedTransactionFees);
-    logger.info('estimated net profit: ' + estimatedNetProfit);
-
-    actions = {
-      gemini: {
-        action: 'sell',
-        quantity: ethereumTradingQuantity,
-        units: 'eth',
-        rate: bidPriceGemini
-      },
-      gdax: {
-        action: 'buy',
-        quantity: ethereumTradingQuantity,
-        units: 'eth',
-        rate: askPriceGdax
-      }
-    };
-  } else {
-    actions = 'no trade opportunity';
-    return actions;
-  }
-
-  var exchangeWithEthereumBalance = determineEthereumBalance();
-
-  console.log(actions[exchangeWithEthereumBalance].action);
-  if (actions[exchangeWithEthereumBalance].action == 'sell') {
-    return actions;
-  } else {
-    return 'no trade opportunity';
-  }
-}
-
-function determineEthereumBalance() {
-
-  // check balances on both exchanges
-  // return name of exchange with ethereum balance (account to sell from)
-  return 'gdax';
-}
 
 function calculateBidPrice(bids, ethereumTradingQuantity) {
 
@@ -269,7 +346,7 @@ function calculateBidPrice(bids, ethereumTradingQuantity) {
     return parseFloat(bid.amount) >= ethereumTradingQuantity;
   });
 
-  return parseFloat(priceLevel.price);
+  return priceLevel ? parseFloat(priceLevel.price) : 'no match found';
 }
 
 function calculateAskPrice(asks, ethereumTradingQuantity) {
@@ -278,6 +355,6 @@ function calculateAskPrice(asks, ethereumTradingQuantity) {
     return parseFloat(ask.amount) >= ethereumTradingQuantity;
   });
 
-  return parseFloat(priceLevel.price);
+  return priceLevel ? parseFloat(priceLevel.price) : 'no match found';
 }
 //# sourceMappingURL=index.js.map

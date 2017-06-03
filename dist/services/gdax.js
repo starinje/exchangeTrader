@@ -26,6 +26,8 @@ var GdaxService = function GdaxService(options) {
                 switch (_context.prev = _context.next) {
                     case 0:
                         _context.prev = 0;
+
+                        // TODO: update this to match format of gemini service
                         requestOptions = {
                             uri: _this.options.url
                         };
@@ -69,7 +71,37 @@ var GdaxService = function GdaxService(options) {
         }, _callee, _this, [[0, 10]]);
     }));
 
+    this.executeTrade = function () {
+        var _ref2 = _asyncToGenerator(regeneratorRuntime.mark(function _callee2(tradeDetails) {
+            return regeneratorRuntime.wrap(function _callee2$(_context2) {
+                while (1) {
+                    switch (_context2.prev = _context2.next) {
+                        case 0:
+
+                            // this code should attempt to place limit order that wont incur transaction fees
+                            // perhaps place buy orders at prices very close to the ask price but not in a current slot so that no taker fee is taken
+                            // likewise place sell orders very close to the bid price but not in a current slot so that no taker fee is taken
+                            // even if it is only successful some of the time it will help
+
+                            // place market trade on gdax 
+                            _this.logger.info('placing ' + tradeDetails.action + ' trade on Gdax for ' + tradeDetails.quantity + ' ethereum at $' + tradeDetails.rate + '/eth');
+                            return _context2.abrupt('return', Promise.resolve('trade completed for GDAX'));
+
+                        case 2:
+                        case 'end':
+                            return _context2.stop();
+                    }
+                }
+            }, _callee2, _this);
+        }));
+
+        return function (_x) {
+            return _ref2.apply(this, arguments);
+        };
+    }();
+
     this.options = options || {};
+    this.logger = options.logger;
     this.session = _requestPromise2.default.defaults({
         json: true,
         headers: {
