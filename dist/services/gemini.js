@@ -4,91 +4,164 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var newOrder = function () {
-    var _ref = _asyncToGenerator(regeneratorRuntime.mark(function _callee(session, options) {
-        var orderOptions, orderResults;
-        return regeneratorRuntime.wrap(function _callee$(_context) {
-            while (1) {
-                switch (_context.prev = _context.next) {
-                    case 0:
-                        orderOptions = {
-                            method: 'POST',
-                            uri: options.url + '/order/new',
-                            json: true,
-                            body: {
-                                request: "/v1/order/new", //is this needed?
-                                nonce: '<nonce>',
-                                client_order_id: "20150102-4738721",
-                                symbol: config.gemini.currencyPair,
-                                amount: options.amount,
-                                price: options.price,
-                                side: options.action,
-                                type: config.gemini.orderType
-                            }
-                        };
-                        _context.next = 3;
-                        return session(orderOptions);
-
-                    case 3:
-                        orderResults = _context.sent;
-                        return _context.abrupt('return', orderResults);
-
-                    case 5:
-                    case 'end':
-                        return _context.stop();
-                }
-            }
-        }, _callee, this);
-    }));
-
-    return function newOrder(_x, _x2) {
-        return _ref.apply(this, arguments);
-    };
-}();
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
 var _requestPromise = require('request-promise');
 
 var _requestPromise2 = _interopRequireDefault(_requestPromise);
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+var _crypto = require('crypto');
 
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+var _crypto2 = _interopRequireDefault(_crypto);
+
+var _shortid = require('shortid');
+
+var _shortid2 = _interopRequireDefault(_shortid);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, arguments); return new Promise(function (resolve, reject) { function step(key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { return Promise.resolve(value).then(function (value) { step("next", value); }, function (err) { step("throw", err); }); } } return step("next"); }); }; }
 
-var GeminiService = function GeminiService(options) {
-    _classCallCheck(this, GeminiService);
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-    _initialiseProps.call(this);
+function createRequestConfig(_ref) {
+    var key = _ref.key,
+        secret = _ref.secret,
+        payload = _ref.payload;
 
-    this.options = options || {};
-    this.logger = options.logger;
-    this.session = _requestPromise2.default.defaults({
-        json: true,
-        headers: {
-            'User-Agent': 'Request-Promise'
-        }
-    });
-};
+    var encodedPayload = new Buffer(JSON.stringify(payload)).toString('base64');
 
-var _initialiseProps = function _initialiseProps() {
+    var signature = _crypto2.default.createHmac('sha384', secret).update(encodedPayload).digest('hex');
+
+    return {
+        'X-GEMINI-APIKEY': key,
+        'X-GEMINI-PAYLOAD': encodedPayload,
+        'X-GEMINI-SIGNATURE': signature
+    };
+}
+
+var GeminiService = function GeminiService(options, sandbox) {
     var _this = this;
 
-    this.getOrderBook = _asyncToGenerator(regeneratorRuntime.mark(function _callee2() {
-        var requestOptions, orderBook, timestamp, bids, asks;
-        return regeneratorRuntime.wrap(function _callee2$(_context2) {
-            while (1) {
-                switch (_context2.prev = _context2.next) {
-                    case 0:
-                        _context2.prev = 0;
-                        requestOptions = {
-                            uri: _this.options.url + '/book/ethusd'
-                        };
-                        _context2.next = 4;
-                        return _this.session(requestOptions);
+    _classCallCheck(this, GeminiService);
 
-                    case 4:
-                        orderBook = _context2.sent;
+    this.requestPrivate = function () {
+        var _ref2 = _asyncToGenerator(regeneratorRuntime.mark(function _callee(endpoint) {
+            var params = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+            var requestUrl, payload, config, requestOptions;
+            return regeneratorRuntime.wrap(function _callee$(_context) {
+                while (1) {
+                    switch (_context.prev = _context.next) {
+                        case 0:
+                            _context.prev = 0;
+
+                            if (!(!_this.options.key || !_this.options.secret)) {
+                                _context.next = 3;
+                                break;
+                            }
+
+                            throw new Error('API key and secret key required to use authenticated methods');
+
+                        case 3:
+                            requestUrl = '' + _this.baseUrl + endpoint;
+                            payload = _extends({
+                                nonce: Date.now(),
+                                request: endpoint
+                            }, params);
+                            config = createRequestConfig({
+                                payload: payload,
+                                key: _this.options.key,
+                                secret: _this.options.secret
+                            });
+
+
+                            console.log(config);
+
+                            requestOptions = {
+                                method: 'POST',
+                                uri: requestUrl,
+                                headers: config
+                            };
+
+
+                            console.log(JSON.stringify(requestOptions));
+
+                            _context.next = 11;
+                            return _this.session(requestOptions);
+
+                        case 11:
+                            return _context.abrupt('return', _context.sent);
+
+                        case 14:
+                            _context.prev = 14;
+                            _context.t0 = _context['catch'](0);
+
+                            _this.logger.info('error: ' + _context.t0);
+                            return _context.abrupt('return');
+
+                        case 18:
+                        case 'end':
+                            return _context.stop();
+                    }
+                }
+            }, _callee, _this, [[0, 14]]);
+        }));
+
+        return function (_x) {
+            return _ref2.apply(this, arguments);
+        };
+    }();
+
+    this.requestPublic = function () {
+        var _ref3 = _asyncToGenerator(regeneratorRuntime.mark(function _callee2(endpoint) {
+            var params = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+            var requestOptions;
+            return regeneratorRuntime.wrap(function _callee2$(_context2) {
+                while (1) {
+                    switch (_context2.prev = _context2.next) {
+                        case 0:
+                            _context2.prev = 0;
+                            requestOptions = {
+                                method: 'GET',
+                                uri: '' + _this.options.url + endpoint,
+                                body: _extends({}, params)
+                            };
+                            _context2.next = 4;
+                            return _this.session(requestOptions);
+
+                        case 4:
+                            return _context2.abrupt('return', _context2.sent);
+
+                        case 7:
+                            _context2.prev = 7;
+                            _context2.t0 = _context2['catch'](0);
+                            return _context2.abrupt('return', Promise.reject(_context2.t0));
+
+                        case 10:
+                        case 'end':
+                            return _context2.stop();
+                    }
+                }
+            }, _callee2, _this, [[0, 7]]);
+        }));
+
+        return function (_x3) {
+            return _ref3.apply(this, arguments);
+        };
+    }();
+
+    this.getOrderBook = _asyncToGenerator(regeneratorRuntime.mark(function _callee3() {
+        var orderBook, timestamp, bids, asks;
+        return regeneratorRuntime.wrap(function _callee3$(_context3) {
+            while (1) {
+                switch (_context3.prev = _context3.next) {
+                    case 0:
+                        _context3.prev = 0;
+                        _context3.next = 3;
+                        return _this.requestPublic('/book/ethusd', {});
+
+                    case 3:
+                        orderBook = _context3.sent;
                         timestamp = orderBook.bids[0].timestamp;
                         bids = orderBook.bids.map(function (bidLevel) {
                             return {
@@ -102,72 +175,99 @@ var _initialiseProps = function _initialiseProps() {
                                 amount: askLevel.amount
                             };
                         });
-                        return _context2.abrupt('return', {
-                            asks: asks,
-                            bids: bids,
-                            timestamp: timestamp
-                        });
+                        return _context3.abrupt('return', { asks: asks, bids: bids, timestamp: timestamp });
 
-                    case 11:
-                        _context2.prev = 11;
-                        _context2.t0 = _context2['catch'](0);
+                    case 10:
+                        _context3.prev = 10;
+                        _context3.t0 = _context3['catch'](0);
 
-                        console.log(_context2.t0);
+                        console.log(_context3.t0);
 
-                    case 14:
+                    case 13:
                     case 'end':
-                        return _context2.stop();
+                        return _context3.stop();
                 }
             }
-        }, _callee2, _this, [[0, 11]]);
+        }, _callee3, _this, [[0, 10]]);
     }));
 
     this.executeTrade = function () {
-        var _ref3 = _asyncToGenerator(regeneratorRuntime.mark(function _callee3(tradeDetails) {
-            var orderResults;
-            return regeneratorRuntime.wrap(function _callee3$(_context3) {
+        var _ref5 = _asyncToGenerator(regeneratorRuntime.mark(function _callee4(tradeDetails) {
+            var orderParams, orderResults;
+            return regeneratorRuntime.wrap(function _callee4$(_context4) {
                 while (1) {
-                    switch (_context3.prev = _context3.next) {
+                    switch (_context4.prev = _context4.next) {
                         case 0:
-
-                            // this code should attempt to place limit order that wont incur transaction fees
-                            // perhaps place buy orders at prices very close to the ask price but not in a current slot so that no taker fee is taken
-                            // likewise place sell orders very close to the bid price but not in a current slot so that no taker fee is taken
-                            // even if it is only successful some of the time it will help
-
-                            // place market trade on gdax 
                             _this.logger.info('placing ' + tradeDetails.action + ' trade on Gemini for ' + tradeDetails.quantity + ' ethereum at $' + tradeDetails.rate + '/eth');
 
-                            orderResults = newOrder(_this.session, options);
+                            orderParams = {
+                                client_order_id: "20150102-4738721", // A client-specified order token
+                                symbol: 'ethusd', // Or any symbol from the /symbols api
+                                quantity: tradeDetails.quantity, // Once again, a quoted number
+                                price: tradeDetails.rate,
+                                side: tradeDetails.action,
+                                type: 'exchange limit'
+                            };
+                            orderResults = _this.newOrder(orderParams);
 
-                            // logic here to retry or whatever depending on results of trade
-                            //logic here to figure out what price to place order at so as to get filled?
+                            //check to make sure order is place
 
+                            //return when order is successful
 
-                            //cancel order
-                            // POST https://api.gemini.com/v1/order/cancel
-                            /*{
-                                // Standard headers
-                                "request": "/v1/order/order/cancel",
-                                "nonce": <nonce>,
-                                 // Request-specific items
-                                "order_id": 12345
-                            }*/
-
-                            return _context3.abrupt('return', orderResults);
+                            return _context4.abrupt('return', Promise.resolve('trade completed for GDAX'));
 
                         case 4:
                         case 'end':
-                            return _context3.stop();
+                            return _context4.stop();
                     }
                 }
-            }, _callee3, _this);
+            }, _callee4, _this);
         }));
 
-        return function (_x3) {
-            return _ref3.apply(this, arguments);
+        return function (_x5) {
+            return _ref5.apply(this, arguments);
         };
     }();
+
+    this.newOrder = function () {
+        var _ref6 = _asyncToGenerator(regeneratorRuntime.mark(function _callee5() {
+            var params = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+            return regeneratorRuntime.wrap(function _callee5$(_context5) {
+                while (1) {
+                    switch (_context5.prev = _context5.next) {
+                        case 0:
+                            _context5.next = 2;
+                            return _this.requestPrivate('/order/new', _extends({
+                                client_order_id: (0, _shortid2.default)(),
+                                type: 'exchange limit'
+                            }, params));
+
+                        case 2:
+                            return _context5.abrupt('return', _context5.sent);
+
+                        case 3:
+                        case 'end':
+                            return _context5.stop();
+                    }
+                }
+            }, _callee5, _this);
+        }));
+
+        return function () {
+            return _ref6.apply(this, arguments);
+        };
+    }();
+
+    this.options = options || {};
+    this.logger = options.logger;
+    var subdomain = sandbox ? 'api.sandbox' : 'api';
+    this.baseUrl = 'https://' + subdomain + '.gemini.com/v1';
+    this.session = _requestPromise2.default.defaults({
+        json: true,
+        headers: {
+            'User-Agent': 'Request-Promise'
+        }
+    });
 };
 
 exports.default = GeminiService;

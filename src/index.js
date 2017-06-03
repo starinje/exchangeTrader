@@ -22,7 +22,7 @@ const logger = new winston.Logger().add(winston.transports.Console, {
     level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
 })
 
-const gdaxService = new GdaxService({...config.gdax, logger})
+const gdaxService = new GdaxService({...config.gdax, logger, })
 const geminiService = new GeminiService({...config.gemini, logger})
 
 let aggregateProfit = 0
@@ -50,8 +50,7 @@ async function main(){
       return 
     }
     
-    // let results = await execute(positionChange)
-
+    let results = await execute(positionChange)
     
   } catch(err){
     logger.info(`error: ${err}`)
@@ -98,7 +97,7 @@ async function determinePositionChange(orderBooks){
   if(gdaxRateIsHigherAndProfitable){
     logger.info('gdax rate is higher and profitable')
 
-    let talSaleValue = bidPriceGdax*ethereumTradingQuantity
+    let totalSaleValue = bidPriceGdax*ethereumTradingQuantity
     let totalPurchaseCost = askPriceGemini*ethereumTradingQuantity
     estimatedGrossProfit = totalSaleValue-totalPurchaseCost
     estimatedTransactionFees = ((transactionPercentageGdax/100)*totalSaleValue) + ((transactionPercentageGemini/100)*totalPurchaseCost)
@@ -185,7 +184,7 @@ async function determineEthereumBalance(){
 
   // check balances on both exchanges
   // return name of exchange with ethereum balance (account to sell from)
-  return 'gemini'
+  return 'gdax'
 
 }
 

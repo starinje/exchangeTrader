@@ -16,10 +16,12 @@
     "autobahn": "^17.5.1",
     "bluebird": "^3.5.0",
     "commander": "^2.9.0",
+    "crypto": "0.0.3",
     "gdax": "^0.4.2",
     "moment": "^2.18.1",
     "request": "^2.81.0",
     "request-promise": "^4.2.1",
+    "shortid": "^2.2.8",
     "winston": "^2.3.1"
   },
   "devDependencies": {

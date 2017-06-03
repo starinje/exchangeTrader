@@ -4,7 +4,7 @@ var _extends = Object.assign || function (target) { for (var i = 1; i < argument
 
 var main = function () {
   var _ref = _asyncToGenerator(regeneratorRuntime.mark(function _callee() {
-    var orderBookGemini, orderBookGdax, orderBooks, positionChange;
+    var orderBookGemini, orderBookGdax, orderBooks, positionChange, results;
     return regeneratorRuntime.wrap(function _callee$(_context) {
       while (1) {
         switch (_context.prev = _context.next) {
@@ -43,30 +43,35 @@ var main = function () {
             return _context.abrupt('return');
 
           case 16:
-            _context.next = 21;
-            break;
+            _context.next = 18;
+            return execute(positionChange);
 
           case 18:
-            _context.prev = 18;
+            results = _context.sent;
+            _context.next = 24;
+            break;
+
+          case 21:
+            _context.prev = 21;
             _context.t0 = _context['catch'](0);
 
             logger.info('error: ' + _context.t0);
 
-          case 21:
-            _context.prev = 21;
-            _context.next = 24;
+          case 24:
+            _context.prev = 24;
+            _context.next = 27;
             return _bluebird2.default.delay(_config2.default.timeDelta);
 
-          case 24:
+          case 27:
             main();
-            return _context.finish(21);
+            return _context.finish(24);
 
-          case 26:
+          case 29:
           case 'end':
             return _context.stop();
         }
       }
-    }, _callee, this, [[0, 18, 21, 26]]);
+    }, _callee, this, [[0, 21, 24, 29]]);
   }));
 
   return function main() {
@@ -76,7 +81,7 @@ var main = function () {
 
 var determinePositionChange = function () {
   var _ref2 = _asyncToGenerator(regeneratorRuntime.mark(function _callee2(orderBooks) {
-    var ethereumTradingQuantity, takeProfitTradeThreshold, swapFundsTradeThreshold, bidPriceGemini, bidPriceGdax, askPriceGemini, askPriceGdax, transactionPercentageGemini, transactionPercentageGdax, gdaxBasePercentageDifference, geminiBasePercentageDifference, gdaxRateIsHigherAndProfitable, geminiRateIsSwappable, positionChange, estimatedTransactionFees, estimatedGrossProfit, estimatedNetProfit, talSaleValue, totalPurchaseCost, _totalSaleValue, _totalPurchaseCost, exchangeWithEthereumBalance;
+    var ethereumTradingQuantity, takeProfitTradeThreshold, swapFundsTradeThreshold, bidPriceGemini, bidPriceGdax, askPriceGemini, askPriceGdax, transactionPercentageGemini, transactionPercentageGdax, gdaxBasePercentageDifference, geminiBasePercentageDifference, gdaxRateIsHigherAndProfitable, geminiRateIsSwappable, positionChange, estimatedTransactionFees, estimatedGrossProfit, estimatedNetProfit, totalSaleValue, totalPurchaseCost, _totalSaleValue, _totalPurchaseCost, exchangeWithEthereumBalance;
 
     return regeneratorRuntime.wrap(function _callee2$(_context2) {
       while (1) {
@@ -118,7 +123,7 @@ var determinePositionChange = function () {
 
             logger.info('gdax rate is higher and profitable');
 
-            talSaleValue = bidPriceGdax * ethereumTradingQuantity;
+            totalSaleValue = bidPriceGdax * ethereumTradingQuantity;
             totalPurchaseCost = askPriceGemini * ethereumTradingQuantity;
 
             estimatedGrossProfit = totalSaleValue - totalPurchaseCost;
@@ -174,13 +179,13 @@ var determinePositionChange = function () {
               type: 'swapFunds',
               gemini: {
                 action: 'sell',
-                quantity: ethereumTradingQuantity,
+                amount: ethereumTradingQuantity,
                 units: 'eth',
                 rate: bidPriceGemini
               },
               gdax: {
                 action: 'buy',
-                quantity: ethereumTradingQuantity,
+                amount: ethereumTradingQuantity,
                 units: 'eth',
                 rate: askPriceGdax
               }
@@ -258,7 +263,7 @@ var determineEthereumBalance = function () {
       while (1) {
         switch (_context4.prev = _context4.next) {
           case 0:
-            return _context4.abrupt('return', 'gemini');
+            return _context4.abrupt('return', 'gdax');
 
           case 1:
           case 'end':
