@@ -29,6 +29,9 @@ function createRequestConfig(_ref) {
         secret = _ref.secret,
         payload = _ref.payload;
 
+
+    console.log('key is: ' + key);
+    console.log('secret is: ' + secret);
     var encodedPayload = new Buffer(JSON.stringify(payload)).toString('base64');
 
     var signature = _crypto2.default.createHmac('sha384', secret).update(encodedPayload).digest('hex');
@@ -40,7 +43,7 @@ function createRequestConfig(_ref) {
     };
 }
 
-var GeminiService = function GeminiService(options, sandbox) {
+var GeminiService = function GeminiService(options) {
     var _this = this;
 
     _classCallCheck(this, GeminiService);
@@ -66,8 +69,12 @@ var GeminiService = function GeminiService(options, sandbox) {
                             requestUrl = '' + _this.baseUrl + endpoint;
                             payload = _extends({
                                 nonce: Date.now(),
-                                request: endpoint
+                                request: '/v1' + endpoint
                             }, params);
+
+
+                            console.log(payload);
+
                             config = createRequestConfig({
                                 payload: payload,
                                 key: _this.options.key,
@@ -86,25 +93,25 @@ var GeminiService = function GeminiService(options, sandbox) {
 
                             console.log(JSON.stringify(requestOptions));
 
-                            _context.next = 11;
+                            _context.next = 12;
                             return _this.session(requestOptions);
 
-                        case 11:
+                        case 12:
                             return _context.abrupt('return', _context.sent);
 
-                        case 14:
-                            _context.prev = 14;
+                        case 15:
+                            _context.prev = 15;
                             _context.t0 = _context['catch'](0);
 
                             _this.logger.info('error: ' + _context.t0);
                             return _context.abrupt('return');
 
-                        case 18:
+                        case 19:
                         case 'end':
                             return _context.stop();
                     }
                 }
-            }, _callee, _this, [[0, 14]]);
+            }, _callee, _this, [[0, 15]]);
         }));
 
         return function (_x) {
@@ -193,7 +200,8 @@ var GeminiService = function GeminiService(options, sandbox) {
 
     this.executeTrade = function () {
         var _ref5 = _asyncToGenerator(regeneratorRuntime.mark(function _callee4(tradeDetails) {
-            var orderParams, orderResults;
+            var orderParams, orderResults, tradeCompleted, tradeCompletedDetails, _tradeStatus;
+
             return regeneratorRuntime.wrap(function _callee4$(_context4) {
                 while (1) {
                     switch (_context4.prev = _context4.next) {
@@ -201,22 +209,57 @@ var GeminiService = function GeminiService(options, sandbox) {
                             _this.logger.info('placing ' + tradeDetails.action + ' trade on Gemini for ' + tradeDetails.quantity + ' ethereum at $' + tradeDetails.rate + '/eth');
 
                             orderParams = {
-                                client_order_id: "20150102-4738721", // A client-specified order token
-                                symbol: 'ethusd', // Or any symbol from the /symbols api
-                                quantity: tradeDetails.quantity, // Once again, a quoted number
+                                client_order_id: "20150102-4738721",
+                                symbol: 'ethusd',
+                                amount: tradeDetails.quantity,
                                 price: tradeDetails.rate,
                                 side: tradeDetails.action,
                                 type: 'exchange limit'
                             };
-                            orderResults = _this.newOrder(orderParams);
 
-                            //check to make sure order is place
+                            //place order
 
-                            //return when order is successful
-
-                            return _context4.abrupt('return', Promise.resolve('trade completed for GDAX'));
+                            _context4.next = 4;
+                            return _this.newOrder(orderParams);
 
                         case 4:
+                            orderResults = _context4.sent;
+                            tradeCompleted = false;
+                            tradeCompletedDetails = void 0;
+
+                            // logic to here that tries to place order
+                            // if it doesnt go through then retrive order book and try matchin existing order as long as it is still profitable
+                            // perhaps this logic should move to index.js?
+
+                            //wait for order to go through and then return final trade details
+
+                        case 7:
+                            if (!(tradeStatus == 'pending')) {
+                                _context4.next = 16;
+                                break;
+                            }
+
+                            _context4.next = 10;
+                            return Promise.delay(1000);
+
+                        case 10:
+                            _context4.next = 12;
+                            return orderStatus(orderResults.order_id);
+
+                        case 12:
+                            _tradeStatus = _context4.sent;
+
+                            if (currentTradeStatus.executed_amount == currentTradeStatus.original_amount) {
+                                tradeCompleted = true;
+                                tradeCompletedDetails = _tradeStatus;
+                            }
+                            _context4.next = 7;
+                            break;
+
+                        case 16:
+                            return _context4.abrupt('return', tradeCompletedDetails);
+
+                        case 17:
                         case 'end':
                             return _context4.stop();
                     }
@@ -258,9 +301,28 @@ var GeminiService = function GeminiService(options, sandbox) {
         };
     }();
 
+    this.availableBalances = _asyncToGenerator(regeneratorRuntime.mark(function _callee6() {
+        return regeneratorRuntime.wrap(function _callee6$(_context6) {
+            while (1) {
+                switch (_context6.prev = _context6.next) {
+                    case 0:
+                        return _context6.abrupt('return', _this.requestPrivate('/balances'));
+
+                    case 1:
+                    case 'end':
+                        return _context6.stop();
+                }
+            }
+        }, _callee6, _this);
+    }));
+
+    this.orderStatus = function (orderId) {
+        return _this.requestPrivate('/order/status', { order_id: orderId });
+    };
+
     this.options = options || {};
-    this.logger = options.logger;
-    var subdomain = sandbox ? 'api.sandbox' : 'api';
+    this.logger = this.options.logger;
+    var subdomain = this.options.sandbox ? 'api.sandbox' : 'api';
     this.baseUrl = 'https://' + subdomain + '.gemini.com/v1';
     this.session = _requestPromise2.default.defaults({
         json: true,

@@ -179,13 +179,13 @@ var determinePositionChange = function () {
               type: 'swapFunds',
               gemini: {
                 action: 'sell',
-                amount: ethereumTradingQuantity,
+                quantity: ethereumTradingQuantity,
                 units: 'eth',
                 rate: bidPriceGemini
               },
               gdax: {
                 action: 'buy',
-                amount: ethereumTradingQuantity,
+                quantity: ethereumTradingQuantity,
                 units: 'eth',
                 rate: askPriceGdax
               }
@@ -199,7 +199,7 @@ var determinePositionChange = function () {
 
           case 55:
             _context2.next = 57;
-            return determineEthereumBalance();
+            return determineCurrentEthereumPosition();
 
           case 57:
             exchangeWithEthereumBalance = _context2.sent;
@@ -257,15 +257,29 @@ var execute = function () {
   };
 }();
 
-var determineEthereumBalance = function () {
+var determineCurrentEthereumPosition = function () {
   var _ref4 = _asyncToGenerator(regeneratorRuntime.mark(function _callee4() {
+    var currentGeminiBalances;
     return regeneratorRuntime.wrap(function _callee4$(_context4) {
       while (1) {
         switch (_context4.prev = _context4.next) {
           case 0:
+            _context4.next = 2;
+            return geminiService.getMyAvailableBalances();
+
+          case 2:
+            currentGeminiBalances = _context4.sent;
+
+            console.log('current Gemini Balances: ' + currentGeminiBalances);
+
+            //let currentGdaxBalances = await gdaxService.getMyAvailableBalances()
+            //console.log(`current Gdax Balances: ${currentGdaxBalances}`)
+
+            // check balances on both exchanges
+            // return name of exchange with ethereum balance (account to sell from)
             return _context4.abrupt('return', 'gdax');
 
-          case 1:
+          case 5:
           case 'end':
             return _context4.stop();
         }
@@ -273,7 +287,7 @@ var determineEthereumBalance = function () {
     }, _callee4, this);
   }));
 
-  return function determineEthereumBalance() {
+  return function determineCurrentEthereumPosition() {
     return _ref4.apply(this, arguments);
   };
 }();

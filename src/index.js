@@ -159,7 +159,7 @@ async function determinePositionChange(orderBooks){
     return positionChange
   }
 
-  let exchangeWithEthereumBalance = await determineEthereumBalance()
+  let exchangeWithEthereumBalance = await determineCurrentEthereumPosition()
   
   if(positionChange[exchangeWithEthereumBalance].action == 'sell'){
     return positionChange
@@ -180,7 +180,14 @@ async function execute(positionChange){
   return tradeLog
 }
 
-async function determineEthereumBalance(){
+async function determineCurrentEthereumPosition(){
+
+
+  let currentGeminiBalances = await geminiService.getMyAvailableBalances()
+  console.log(`current Gemini Balances: ${currentGeminiBalances}`)
+
+  //let currentGdaxBalances = await gdaxService.getMyAvailableBalances()
+  //console.log(`current Gdax Balances: ${currentGdaxBalances}`)
 
   // check balances on both exchanges
   // return name of exchange with ethereum balance (account to sell from)

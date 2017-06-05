@@ -4,6 +4,9 @@ import shortid from 'shortid';
 
 
 function createRequestConfig({ key, secret, payload }){
+
+    console.log(`key is: ${key}`)
+    console.log(`secret is: ${secret}`)
   const encodedPayload = (new Buffer(JSON.stringify(payload)))
     .toString(`base64`);
 
@@ -22,10 +25,10 @@ function createRequestConfig({ key, secret, payload }){
 
 export default class GeminiService {
 
-    constructor(options, sandbox){
+    constructor(options){
         this.options = options || {}
-        this.logger = options.logger
-        const subdomain = sandbox ? `api.sandbox` : `api`;
+        this.logger = this.options.logger
+        const subdomain = this.options.sandbox ? `api.sandbox` : `api`;
         this.baseUrl = `https://${subdomain}.gemini.com/v1`;
         this.session = rp.defaults({
             json: true,
@@ -48,9 +51,11 @@ export default class GeminiService {
 
             const payload = {
                 nonce: Date.now(),
-                request: endpoint,
+                request: `/v1${endpoint}`,
                 ...params,
             };
+
+            console.log(payload)
 
             const config = createRequestConfig({
                 payload,
@@ -121,23 +126,40 @@ export default class GeminiService {
 
     executeTrade = async (tradeDetails) => {
         this.logger.info(`placing ${tradeDetails.action} trade on Gemini for ${tradeDetails.quantity} ethereum at $${tradeDetails.rate}/eth`)
-
+        
         let orderParams = { 
-            client_order_id: "20150102-4738721", // A client-specified order token
-            symbol: 'ethusd',       // Or any symbol from the /symbols api
-            quantity: tradeDetails.quantity,        // Once again, a quoted number
+            client_order_id: "20150102-4738721", 
+            symbol: 'ethusd',       
+            amount: tradeDetails.quantity,        
             price: tradeDetails.rate,
             side: tradeDetails.action,
             type: 'exchange limit'
         }
 
-        let orderResults = this.newOrder(orderParams)
+        //place order
+        let orderResults = await this.newOrder(orderParams)
 
-        //check to make sure order is place
+        let tradeCompleted = false
+        let tradeCompletedDetails
 
-        //return when order is successful
+        // logic to here that tries to place order
+        // if it doesnt go through then retrive order book and try matchin existing order as long as it is still profitable
+        // perhaps this logic should move to index.js?
 
-        return Promise.resolve('trade completed for GDAX')
+        //wait for order to go through and then return final trade details
+        while(tradeStatus == 'pending'){
+            await Promise.delay(1000)
+            let tradeStatus = await orderStatus(orderResults.order_id)
+            if(currentTradeStatus.executed_amount == currentTradeStatus.original_amount){
+                tradeCompleted = true
+                tradeCompletedDetails = tradeStatus
+            }
+        }
+
+
+
+
+        return tradeCompletedDetails
     }
 
     newOrder = async (params = {}) => {
@@ -147,6 +169,16 @@ export default class GeminiService {
             ...params,
         })
     }
+
+    availableBalances = async () => {
+        return this.requestPrivate(`/balances`)
+    }
+
+    orderStatus = (orderId) => {
+        return this.requestPrivate(`/order/status`, { order_id: orderId })
+    
+    }
+    
 
 
 
