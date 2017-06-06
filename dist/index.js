@@ -235,7 +235,7 @@ var execute = function () {
         switch (_context3.prev = _context3.next) {
           case 0:
             _context3.next = 2;
-            return _bluebird2.default.all([geminiService.executeTrade(positionChange.gemini), gdaxService.executeTrade(positionChange.gdax)]);
+            return _bluebird2.default.all([gdaxService.executeTrade(positionChange.gdax), geminiService.executeTrade(positionChange.gemini)]);
 
           case 2:
             tradeResults = _context3.sent;
@@ -265,12 +265,12 @@ var determineCurrentEthereumPosition = function () {
         switch (_context4.prev = _context4.next) {
           case 0:
             _context4.next = 2;
-            return geminiService.getMyAvailableBalances();
+            return geminiService.availableBalances();
 
           case 2:
             currentGeminiBalances = _context4.sent;
 
-            console.log('current Gemini Balances: ' + currentGeminiBalances);
+            logger.info('current Gemini Balances: ' + JSON.stringify(currentGeminiBalances));
 
             //let currentGdaxBalances = await gdaxService.getMyAvailableBalances()
             //console.log(`current Gdax Balances: ${currentGdaxBalances}`)

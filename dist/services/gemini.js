@@ -18,9 +18,13 @@ var _shortid = require('shortid');
 
 var _shortid2 = _interopRequireDefault(_shortid);
 
+var _bluebird = require('bluebird');
+
+var _bluebird2 = _interopRequireDefault(_bluebird);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, arguments); return new Promise(function (resolve, reject) { function step(key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { return Promise.resolve(value).then(function (value) { step("next", value); }, function (err) { step("throw", err); }); } } return step("next"); }); }; }
+function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, arguments); return new _bluebird2.default(function (resolve, reject) { function step(key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { return _bluebird2.default.resolve(value).then(function (value) { step("next", value); }, function (err) { step("throw", err); }); } } return step("next"); }); }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -30,8 +34,6 @@ function createRequestConfig(_ref) {
         payload = _ref.payload;
 
 
-    console.log('key is: ' + key);
-    console.log('secret is: ' + secret);
     var encodedPayload = new Buffer(JSON.stringify(payload)).toString('base64');
 
     var signature = _crypto2.default.createHmac('sha384', secret).update(encodedPayload).digest('hex');
@@ -71,47 +73,35 @@ var GeminiService = function GeminiService(options) {
                                 nonce: Date.now(),
                                 request: '/v1' + endpoint
                             }, params);
-
-
-                            console.log(payload);
-
                             config = createRequestConfig({
                                 payload: payload,
                                 key: _this.options.key,
                                 secret: _this.options.secret
                             });
-
-
-                            console.log(config);
-
                             requestOptions = {
                                 method: 'POST',
                                 uri: requestUrl,
                                 headers: config
                             };
-
-
-                            console.log(JSON.stringify(requestOptions));
-
-                            _context.next = 12;
+                            _context.next = 9;
                             return _this.session(requestOptions);
 
-                        case 12:
+                        case 9:
                             return _context.abrupt('return', _context.sent);
 
-                        case 15:
-                            _context.prev = 15;
+                        case 12:
+                            _context.prev = 12;
                             _context.t0 = _context['catch'](0);
 
                             _this.logger.info('error: ' + _context.t0);
                             return _context.abrupt('return');
 
-                        case 19:
+                        case 16:
                         case 'end':
                             return _context.stop();
                     }
                 }
-            }, _callee, _this, [[0, 15]]);
+            }, _callee, _this, [[0, 12]]);
         }));
 
         return function (_x) {
@@ -130,7 +120,7 @@ var GeminiService = function GeminiService(options) {
                             _context2.prev = 0;
                             requestOptions = {
                                 method: 'GET',
-                                uri: '' + _this.options.url + endpoint,
+                                uri: '' + _this.baseUrl + endpoint,
                                 body: _extends({}, params)
                             };
                             _context2.next = 4;
@@ -142,9 +132,11 @@ var GeminiService = function GeminiService(options) {
                         case 7:
                             _context2.prev = 7;
                             _context2.t0 = _context2['catch'](0);
-                            return _context2.abrupt('return', Promise.reject(_context2.t0));
 
-                        case 10:
+                            _this.logger.info('error: ' + _context2.t0);
+                            return _context2.abrupt('return');
+
+                        case 11:
                         case 'end':
                             return _context2.stop();
                     }
@@ -188,7 +180,7 @@ var GeminiService = function GeminiService(options) {
                         _context3.prev = 10;
                         _context3.t0 = _context3['catch'](0);
 
-                        console.log(_context3.t0);
+                        _this.logger.info(_context3.t0);
 
                     case 13:
                     case 'end':
@@ -200,12 +192,13 @@ var GeminiService = function GeminiService(options) {
 
     this.executeTrade = function () {
         var _ref5 = _asyncToGenerator(regeneratorRuntime.mark(function _callee4(tradeDetails) {
-            var orderParams, orderResults, tradeCompleted, tradeCompletedDetails, _tradeStatus;
-
+            var orderParams, orderResults, tradeCompleted, tradeCompletedDetails, tradeStatus;
             return regeneratorRuntime.wrap(function _callee4$(_context4) {
                 while (1) {
                     switch (_context4.prev = _context4.next) {
                         case 0:
+                            _context4.prev = 0;
+
                             _this.logger.info('placing ' + tradeDetails.action + ' trade on Gemini for ' + tradeDetails.quantity + ' ethereum at $' + tradeDetails.rate + '/eth');
 
                             orderParams = {
@@ -216,55 +209,52 @@ var GeminiService = function GeminiService(options) {
                                 side: tradeDetails.action,
                                 type: 'exchange limit'
                             };
-
-                            //place order
-
-                            _context4.next = 4;
+                            _context4.next = 5;
                             return _this.newOrder(orderParams);
 
-                        case 4:
+                        case 5:
                             orderResults = _context4.sent;
                             tradeCompleted = false;
                             tradeCompletedDetails = void 0;
 
-                            // logic to here that tries to place order
-                            // if it doesnt go through then retrive order book and try matchin existing order as long as it is still profitable
-                            // perhaps this logic should move to index.js?
-
-                            //wait for order to go through and then return final trade details
-
-                        case 7:
-                            if (!(tradeStatus == 'pending')) {
-                                _context4.next = 16;
+                        case 8:
+                            if (tradeCompleted) {
+                                _context4.next = 17;
                                 break;
                             }
 
-                            _context4.next = 10;
-                            return Promise.delay(1000);
+                            _context4.next = 11;
+                            return _bluebird2.default.delay(1000);
 
-                        case 10:
-                            _context4.next = 12;
-                            return orderStatus(orderResults.order_id);
+                        case 11:
+                            _context4.next = 13;
+                            return _this.orderStatus(orderResults.order_id);
 
-                        case 12:
-                            _tradeStatus = _context4.sent;
+                        case 13:
+                            tradeStatus = _context4.sent;
 
-                            if (currentTradeStatus.executed_amount == currentTradeStatus.original_amount) {
+                            if (tradeStatus.executed_amount == tradeStatus.original_amount) {
                                 tradeCompleted = true;
-                                tradeCompletedDetails = _tradeStatus;
+                                tradeCompletedDetails = tradeStatus;
                             }
-                            _context4.next = 7;
+                            _context4.next = 8;
                             break;
 
-                        case 16:
+                        case 17:
                             return _context4.abrupt('return', tradeCompletedDetails);
 
-                        case 17:
+                        case 20:
+                            _context4.prev = 20;
+                            _context4.t0 = _context4['catch'](0);
+
+                            _this.logger.info(_context4.t0);
+
+                        case 23:
                         case 'end':
                             return _context4.stop();
                     }
                 }
-            }, _callee4, _this);
+            }, _callee4, _this, [[0, 20]]);
         }));
 
         return function (_x5) {

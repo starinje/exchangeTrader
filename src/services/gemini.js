@@ -1,12 +1,11 @@
 import rp from 'request-promise'
 import crypto from 'crypto';
 import shortid from 'shortid';
+import Promise from 'bluebird'
 
 
 function createRequestConfig({ key, secret, payload }){
 
-    console.log(`key is: ${key}`)
-    console.log(`secret is: ${secret}`)
   const encodedPayload = (new Buffer(JSON.stringify(payload)))
     .toString(`base64`);
 
@@ -40,7 +39,6 @@ export default class GeminiService {
 
     requestPrivate = async(endpoint, params = {}) => {
         try{
-            //code here to send private request
             if (!this.options.key || !this.options.secret) {
                 throw new Error(
                     `API key and secret key required to use authenticated methods`,
@@ -55,7 +53,6 @@ export default class GeminiService {
                 ...params,
             };
 
-            console.log(payload)
 
             const config = createRequestConfig({
                 payload,
@@ -63,15 +60,11 @@ export default class GeminiService {
                 secret: this.options.secret,
             });
 
-            console.log(config)
-
             const requestOptions = {
                 method: 'POST',
                 uri: requestUrl,
                 headers: config
             }
-
-            console.log(JSON.stringify(requestOptions))
 
             return await this.session(requestOptions)
         } catch(err) {
@@ -84,7 +77,7 @@ export default class GeminiService {
         try {
             const requestOptions = {
                 method: 'GET',
-                uri: `${this.options.url}${endpoint}`,
+                uri: `${this.baseUrl}${endpoint}`,
                 body: {
                     ...params
                 }
@@ -92,13 +85,13 @@ export default class GeminiService {
 
             return await this.session(requestOptions) 
         } catch(err) {
-            return Promise.reject(err)
+            this.logger.info(`error: ${err}`)
+            return 
         } 
     }
 
     getOrderBook = async () => {
         try{
-            // let orderBook = await this.session(requestOptions)
             let orderBook = await this.requestPublic(`/book/ethusd`, {})
 
             let timestamp = orderBook.bids[0].timestamp
@@ -119,47 +112,42 @@ export default class GeminiService {
 
             return { asks, bids,timestamp}
         } catch(err){
-            console.log(err)
+            this.logger.info(err)
         }
 
     }
 
     executeTrade = async (tradeDetails) => {
-        this.logger.info(`placing ${tradeDetails.action} trade on Gemini for ${tradeDetails.quantity} ethereum at $${tradeDetails.rate}/eth`)
+        try{
+            this.logger.info(`placing ${tradeDetails.action} trade on Gemini for ${tradeDetails.quantity} ethereum at $${tradeDetails.rate}/eth`)
         
-        let orderParams = { 
-            client_order_id: "20150102-4738721", 
-            symbol: 'ethusd',       
-            amount: tradeDetails.quantity,        
-            price: tradeDetails.rate,
-            side: tradeDetails.action,
-            type: 'exchange limit'
-        }
-
-        //place order
-        let orderResults = await this.newOrder(orderParams)
-
-        let tradeCompleted = false
-        let tradeCompletedDetails
-
-        // logic to here that tries to place order
-        // if it doesnt go through then retrive order book and try matchin existing order as long as it is still profitable
-        // perhaps this logic should move to index.js?
-
-        //wait for order to go through and then return final trade details
-        while(tradeStatus == 'pending'){
-            await Promise.delay(1000)
-            let tradeStatus = await orderStatus(orderResults.order_id)
-            if(currentTradeStatus.executed_amount == currentTradeStatus.original_amount){
-                tradeCompleted = true
-                tradeCompletedDetails = tradeStatus
+            let orderParams = { 
+                client_order_id: "20150102-4738721", 
+                symbol: 'ethusd',       
+                amount: tradeDetails.quantity,        
+                price: tradeDetails.rate,
+                side: tradeDetails.action,
+                type: 'exchange limit'
             }
+
+            let orderResults = await this.newOrder(orderParams)
+
+            let tradeCompleted = false
+            let tradeCompletedDetails
+
+            while(!tradeCompleted){
+                await Promise.delay(1000)
+                let tradeStatus = await this.orderStatus(orderResults.order_id)
+                if(tradeStatus.executed_amount == tradeStatus.original_amount){
+                    tradeCompleted = true
+                    tradeCompletedDetails = tradeStatus
+                }
+            }
+            return tradeCompletedDetails
+
+        } catch(err){
+            this.logger.info(err)
         }
-
-
-
-
-        return tradeCompletedDetails
     }
 
     newOrder = async (params = {}) => {
@@ -176,10 +164,5 @@ export default class GeminiService {
 
     orderStatus = (orderId) => {
         return this.requestPrivate(`/order/status`, { order_id: orderId })
-    
     }
-    
-
-
-
 }

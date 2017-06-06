@@ -170,7 +170,7 @@ async function determinePositionChange(orderBooks){
 
 async function execute(positionChange){
 
-  let tradeResults = await Promise.all([geminiService.executeTrade(positionChange.gemini), gdaxService.executeTrade(positionChange.gdax)])
+  let tradeResults = await Promise.all([gdaxService.executeTrade(positionChange.gdax), geminiService.executeTrade(positionChange.gemini)])
 
   let tradeLog = {
     ...tradeResults,
@@ -183,8 +183,8 @@ async function execute(positionChange){
 async function determineCurrentEthereumPosition(){
 
 
-  let currentGeminiBalances = await geminiService.getMyAvailableBalances()
-  console.log(`current Gemini Balances: ${currentGeminiBalances}`)
+  let currentGeminiBalances = await geminiService.availableBalances()
+  logger.info(`current Gemini Balances: ${JSON.stringify(currentGeminiBalances)}`)
 
   //let currentGdaxBalances = await gdaxService.getMyAvailableBalances()
   //console.log(`current Gdax Balances: ${currentGdaxBalances}`)
