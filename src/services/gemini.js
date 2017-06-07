@@ -68,8 +68,7 @@ export default class GeminiService {
 
             return await this.session(requestOptions)
         } catch(err) {
-            this.logger.info(`error: ${err}`)
-            return 
+            return Promise.reject(`gemini requestPrivate |> ${err}`)
         }
     }
 
@@ -85,8 +84,7 @@ export default class GeminiService {
 
             return await this.session(requestOptions) 
         } catch(err) {
-            this.logger.info(`error: ${err}`)
-            return 
+            return Promise.reject(`gemini requestPublic |> ${err}`)
         } 
     }
 
@@ -112,7 +110,7 @@ export default class GeminiService {
 
             return { asks, bids,timestamp}
         } catch(err){
-            this.logger.info(err)
+            return Promise.reject(`gemini getOrderBook |> ${err}`)
         }
 
     }
@@ -131,7 +129,7 @@ export default class GeminiService {
             }
 
             let orderResults = await this.newOrder(orderParams)
-
+            
             let tradeCompleted = false
             let tradeCompletedDetails
 
@@ -146,23 +144,36 @@ export default class GeminiService {
             return tradeCompletedDetails
 
         } catch(err){
-            this.logger.info(err)
+            return Promise.reject(`gemini executeTrade |> ${err}`)
         }
     }
 
     newOrder = async (params = {}) => {
-        return await this.requestPrivate(`/order/new`, {
-            client_order_id: shortid(),
-            type: `exchange limit`,
-            ...params,
-        })
+        try {
+            return await this.requestPrivate(`/order/new`, {
+                client_order_id: shortid(),
+                type: `exchange limit`,
+                ...params,
+            })
+        } catch(err){
+            return Promise.reject(`gemini newOrder |> ${err}`)
+        }
+        
     }
 
     availableBalances = async () => {
-        return this.requestPrivate(`/balances`)
+        try {
+            return this.requestPrivate(`/balances`)
+        } catch(err){
+            return Promise.reject(`gemini availableBalances |> ${err}`)
+        }
     }
 
     orderStatus = (orderId) => {
-        return this.requestPrivate(`/order/status`, { order_id: orderId })
+        try {
+            return this.requestPrivate(`/order/status`, { order_id: orderId })
+        } catch(err){
+            return Promise.reject(`gemini orderStatus |> ${err}`)
+        }
     }
 }

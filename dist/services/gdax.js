@@ -42,6 +42,7 @@ var GdaxService = function GdaxService(options) {
             while (1) {
                 switch (_context.prev = _context.next) {
                     case 0:
+                        _context.prev = 0;
                         return _context.abrupt('return', new _bluebird2.default(function (resolve, reject) {
                             _this.publicClient.getProductOrderBook({ 'level': 2 }, function (err, response, data) {
 
@@ -71,12 +72,17 @@ var GdaxService = function GdaxService(options) {
                             });
                         }));
 
-                    case 1:
+                    case 4:
+                        _context.prev = 4;
+                        _context.t0 = _context['catch'](0);
+                        return _context.abrupt('return', _bluebird2.default.reject('gdax getOrderBook |> ' + _context.t0));
+
+                    case 7:
                     case 'end':
                         return _context.stop();
                 }
             }
-        }, _callee, _this);
+        }, _callee, _this, [[0, 4]]);
     }));
 
     this.executeTrade = function () {
@@ -86,7 +92,9 @@ var GdaxService = function GdaxService(options) {
                 while (1) {
                     switch (_context2.prev = _context2.next) {
                         case 0:
-                            _this.logger.info('placing ' + tradeDetails.action + ' trade on Gemini for ' + tradeDetails.quantity + ' ethereum at $' + tradeDetails.rate + '/eth');
+                            _context2.prev = 0;
+
+                            _this.logger.info('placing ' + tradeDetails.action + ' trade on Gdax for ' + tradeDetails.quantity + ' ethereum at $' + tradeDetails.rate + '/eth');
 
                             orderParams = {
                                 productId: 'ETH-USD',
@@ -94,46 +102,51 @@ var GdaxService = function GdaxService(options) {
                                 price: tradeDetails.rate,
                                 action: tradeDetails.action
                             };
-                            _context2.next = 4;
+                            _context2.next = 5;
                             return _this.newOrder(orderParams);
 
-                        case 4:
+                        case 5:
                             orderResults = _context2.sent;
                             tradeCompleted = false;
                             tradeCompletedDetails = void 0;
 
-                        case 7:
+                        case 8:
                             if (tradeCompleted) {
-                                _context2.next = 16;
+                                _context2.next = 17;
                                 break;
                             }
 
-                            _context2.next = 10;
-                            return _bluebird2.default.delay(1000);
+                            _context2.next = 11;
+                            return _this.orderStatus(orderResults.id);
 
-                        case 10:
-                            _context2.next = 12;
-                            return _this.orderStatus(orderResults.order_id);
-
-                        case 12:
+                        case 11:
                             tradeStatus = _context2.sent;
 
-                            if (tradeStatus.length < 1) {
+                            if (tradeStatus.status == 'done') {
                                 tradeCompleted = true;
                                 tradeCompletedDetails = tradeStatus;
                             }
-                            _context2.next = 7;
+                            _context2.next = 15;
+                            return _bluebird2.default.delay(1000);
+
+                        case 15:
+                            _context2.next = 8;
                             break;
 
-                        case 16:
+                        case 17:
                             return _context2.abrupt('return', tradeCompletedDetails);
 
-                        case 17:
+                        case 20:
+                            _context2.prev = 20;
+                            _context2.t0 = _context2['catch'](0);
+                            return _context2.abrupt('return', _bluebird2.default.reject('gdax executeTrade |> ' + _context2.t0));
+
+                        case 23:
                         case 'end':
                             return _context2.stop();
                     }
                 }
-            }, _callee2, _this);
+            }, _callee2, _this, [[0, 20]]);
         }));
 
         return function (_x) {
@@ -148,6 +161,7 @@ var GdaxService = function GdaxService(options) {
                 while (1) {
                     switch (_context3.prev = _context3.next) {
                         case 0:
+                            _context3.prev = 0;
                             return _context3.abrupt('return', new _bluebird2.default(function (resolve, reject) {
 
                                 var reformattedParams = {
@@ -161,12 +175,17 @@ var GdaxService = function GdaxService(options) {
                                 });
                             }));
 
-                        case 1:
+                        case 4:
+                            _context3.prev = 4;
+                            _context3.t0 = _context3['catch'](0);
+                            return _context3.abrupt('return', _bluebird2.default.reject('gdax newOrder Error: ' + _context3.t0));
+
+                        case 7:
                         case 'end':
                             return _context3.stop();
                     }
                 }
-            }, _callee3, _this);
+            }, _callee3, _this, [[0, 4]]);
         }));
 
         return function () {
@@ -179,20 +198,33 @@ var GdaxService = function GdaxService(options) {
             while (1) {
                 switch (_context4.prev = _context4.next) {
                     case 0:
+                        _context4.prev = 0;
+                        _context4.next = 6;
+                        break;
+
+                    case 3:
+                        _context4.prev = 3;
+                        _context4.t0 = _context4['catch'](0);
+                        return _context4.abrupt('return', _bluebird2.default.reject('gdax availableBalances |> ' + _context4.t0));
+
+                    case 6:
                     case 'end':
                         return _context4.stop();
                 }
             }
-        }, _callee4, _this);
+        }, _callee4, _this, [[0, 3]]);
     }));
 
     this.orderStatus = function (orderId) {
-        console.log('in orderStatus function');
-        return new _bluebird2.default(function (resolve, reject) {
-            _this.authedClient.getOrders(function (err, results, data) {
-                return resolve(data);
+        try {
+            return new _bluebird2.default(function (resolve, reject) {
+                _this.authedClient.getOrder(orderId, function (err, results, data) {
+                    return resolve(data);
+                });
             });
-        });
+        } catch (err) {
+            return _bluebird2.default.reject('gdax orderStatus |> ' + err);
+        }
     };
 
     this.options = options || {};

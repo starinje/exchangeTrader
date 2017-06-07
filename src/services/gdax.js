@@ -5,7 +5,6 @@ import Promise from 'bluebird'
 import Gdax from 'gdax'
 
 export default class GdaxService {
-
     constructor(options){
         this.options = options || {}
         this.logger = this.options.logger
@@ -16,89 +15,110 @@ export default class GdaxService {
         }
 
     getOrderBook = async () => {
-        return new Promise((resolve, reject) => {
-            this.publicClient.getProductOrderBook({'level': 2}, (err, response, data) => {
+        try{
+            return new Promise((resolve, reject) => {
+                this.publicClient.getProductOrderBook({'level': 2}, (err, response, data) => {
 
-                let orderBook = {...data}
-            
-                const bids = orderBook.bids.map((bidLevel) => {
-                    return {
-                        price: bidLevel[0],
-                        amount: bidLevel[1]
+                    let orderBook = {...data}
+                
+                    const bids = orderBook.bids.map((bidLevel) => {
+                        return {
+                            price: bidLevel[0],
+                            amount: bidLevel[1]
+                        }
+                    })
+
+                    const asks = orderBook.asks.map((askLevel) => {
+                        return {
+                            price: askLevel[0],
+                            amount: askLevel[1]
+                        }
+                    })
+
+                    let reformattedOrderBook = {
+                        asks: asks,
+                        bids: bids,
+                        timeStamp: 'timestamp'
                     }
+
+                    return resolve(reformattedOrderBook)
                 })
-
-                const asks = orderBook.asks.map((askLevel) => {
-                    return {
-                        price: askLevel[0],
-                        amount: askLevel[1]
-                    }
-                })
-
-                let reformattedOrderBook = {
-                    asks: asks,
-                    bids: bids,
-                    timeStamp: 'timestamp'
-                }
-
-                return resolve(reformattedOrderBook)
             })
-        })
+        } catch(err){
+            return Promise.reject(`gdax getOrderBook |> ${err}`)
+        }
+      
     }
 
     executeTrade = async (tradeDetails) => {
-        this.logger.info(`placing ${tradeDetails.action} trade on Gemini for ${tradeDetails.quantity} ethereum at $${tradeDetails.rate}/eth`)
+        try{
+            this.logger.info(`placing ${tradeDetails.action} trade on Gdax for ${tradeDetails.quantity} ethereum at $${tradeDetails.rate}/eth`)
         
-        let orderParams = { 
-            productId: 'ETH-USD',       
-            size: tradeDetails.quantity,        
-            price: tradeDetails.rate,
-            action: tradeDetails.action
-        }
-
-        let orderResults = await this.newOrder(orderParams)
-
-        let tradeCompleted = false
-        let tradeCompletedDetails
-
-        while(!tradeCompleted){
-            await Promise.delay(1000)
-            let tradeStatus = await this.orderStatus(orderResults.order_id)
-            if(tradeStatus.length < 1){
-                tradeCompleted = true
-                tradeCompletedDetails = tradeStatus
+            let orderParams = { 
+                productId: 'ETH-USD',       
+                size: tradeDetails.quantity,        
+                price: tradeDetails.rate,
+                action: tradeDetails.action
             }
-        }
 
-        return tradeCompletedDetails
+            let orderResults = await this.newOrder(orderParams)
+
+            let tradeCompleted = false
+            let tradeCompletedDetails
+
+            while(!tradeCompleted){
+                let tradeStatus = await this.orderStatus(orderResults.id)
+                if(tradeStatus.status == 'done'){
+                    tradeCompleted = true
+                    tradeCompletedDetails = tradeStatus
+                }
+                await Promise.delay(1000)
+            }
+
+            return tradeCompletedDetails
+
+        } catch(err){
+            return Promise.reject(`gdax executeTrade |> ${err}`)
+        } 
+       
     }
 
     newOrder = async (params = {}) => {
-        return new Promise((resolve, reject) => {
+        try {
+            return new Promise((resolve, reject) => {
 
-            const reformattedParams = {
-                price: params.price,
-                size: params.size,
-                product_id: params.productId
-            }
+                const reformattedParams = {
+                    price: params.price,
+                    size: params.size,
+                    product_id: params.productId
+                }
 
-            this.authedClient[params.action](reformattedParams, (err, results, data) => {
-                return resolve(results)
+                this.authedClient[params.action](reformattedParams, (err, results, data) => {
+                    return resolve(results)
+                })
             })
-        })
-
+        } catch(err){
+            return Promise.reject(`gdax newOrder Error: ${err}`)
+            
+        }
     }
 
     availableBalances = async () => {
-        // return this.requestPrivate(`/balances`)
+        try {
+        } catch(err){
+            return Promise.reject(`gdax availableBalances |> ${err}`)
+        }
     }
 
     orderStatus = (orderId) => {
-        console.log('in orderStatus function')
-        return new Promise((resolve, reject) => {
-            this.authedClient.getOrders((err, results, data) => {
-                return resolve(data)
+        try {  
+           return new Promise((resolve, reject) => {
+               this.authedClient.getOrder(orderId, (err, results, data) => {
+                   return resolve(data)
+               });
             })
-        })
+        } catch(err){
+            return Promise.reject(`gdax orderStatus |> ${err}`)
+        }
     }
 }

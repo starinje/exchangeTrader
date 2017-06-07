@@ -92,11 +92,9 @@ var GeminiService = function GeminiService(options) {
                         case 12:
                             _context.prev = 12;
                             _context.t0 = _context['catch'](0);
+                            return _context.abrupt('return', _bluebird2.default.reject('gemini requestPrivate |> ' + _context.t0));
 
-                            _this.logger.info('error: ' + _context.t0);
-                            return _context.abrupt('return');
-
-                        case 16:
+                        case 15:
                         case 'end':
                             return _context.stop();
                     }
@@ -132,11 +130,9 @@ var GeminiService = function GeminiService(options) {
                         case 7:
                             _context2.prev = 7;
                             _context2.t0 = _context2['catch'](0);
+                            return _context2.abrupt('return', _bluebird2.default.reject('gemini requestPublic |> ' + _context2.t0));
 
-                            _this.logger.info('error: ' + _context2.t0);
-                            return _context2.abrupt('return');
-
-                        case 11:
+                        case 10:
                         case 'end':
                             return _context2.stop();
                     }
@@ -179,8 +175,7 @@ var GeminiService = function GeminiService(options) {
                     case 10:
                         _context3.prev = 10;
                         _context3.t0 = _context3['catch'](0);
-
-                        _this.logger.info(_context3.t0);
+                        return _context3.abrupt('return', _bluebird2.default.reject('gemini getOrderBook |> ' + _context3.t0));
 
                     case 13:
                     case 'end':
@@ -246,8 +241,7 @@ var GeminiService = function GeminiService(options) {
                         case 20:
                             _context4.prev = 20;
                             _context4.t0 = _context4['catch'](0);
-
-                            _this.logger.info(_context4.t0);
+                            return _context4.abrupt('return', _bluebird2.default.reject('gemini executeTrade |> ' + _context4.t0));
 
                         case 23:
                         case 'end':
@@ -269,21 +263,27 @@ var GeminiService = function GeminiService(options) {
                 while (1) {
                     switch (_context5.prev = _context5.next) {
                         case 0:
-                            _context5.next = 2;
+                            _context5.prev = 0;
+                            _context5.next = 3;
                             return _this.requestPrivate('/order/new', _extends({
                                 client_order_id: (0, _shortid2.default)(),
                                 type: 'exchange limit'
                             }, params));
 
-                        case 2:
+                        case 3:
                             return _context5.abrupt('return', _context5.sent);
 
-                        case 3:
+                        case 6:
+                            _context5.prev = 6;
+                            _context5.t0 = _context5['catch'](0);
+                            return _context5.abrupt('return', _bluebird2.default.reject('gemini newOrder |> ' + _context5.t0));
+
+                        case 9:
                         case 'end':
                             return _context5.stop();
                     }
                 }
-            }, _callee5, _this);
+            }, _callee5, _this, [[0, 6]]);
         }));
 
         return function () {
@@ -296,18 +296,28 @@ var GeminiService = function GeminiService(options) {
             while (1) {
                 switch (_context6.prev = _context6.next) {
                     case 0:
+                        _context6.prev = 0;
                         return _context6.abrupt('return', _this.requestPrivate('/balances'));
 
-                    case 1:
+                    case 4:
+                        _context6.prev = 4;
+                        _context6.t0 = _context6['catch'](0);
+                        return _context6.abrupt('return', _bluebird2.default.reject('gemini availableBalances |> ' + _context6.t0));
+
+                    case 7:
                     case 'end':
                         return _context6.stop();
                 }
             }
-        }, _callee6, _this);
+        }, _callee6, _this, [[0, 4]]);
     }));
 
     this.orderStatus = function (orderId) {
-        return _this.requestPrivate('/order/status', { order_id: orderId });
+        try {
+            return _this.requestPrivate('/order/status', { order_id: orderId });
+        } catch (err) {
+            return _bluebird2.default.reject('gemini orderStatus |> ' + err);
+        }
     };
 
     this.options = options || {};

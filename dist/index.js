@@ -269,17 +269,9 @@ var determineCurrentEthereumPosition = function () {
 
           case 2:
             currentGeminiBalances = _context4.sent;
-
-            logger.info('current Gemini Balances: ' + JSON.stringify(currentGeminiBalances));
-
-            //let currentGdaxBalances = await gdaxService.getMyAvailableBalances()
-            //console.log(`current Gdax Balances: ${currentGdaxBalances}`)
-
-            // check balances on both exchanges
-            // return name of exchange with ethereum balance (account to sell from)
             return _context4.abrupt('return', 'gdax');
 
-          case 5:
+          case 4:
           case 'end':
             return _context4.stop();
         }
@@ -342,7 +334,6 @@ function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, a
 
 var TIMESTAMP_FORMAT = 'HH:mm:ss.SSS';
 
-// Initialize logger
 var logger = new _winston2.default.Logger().add(_winston2.default.transports.Console, {
   timestamp: function timestamp() {
     return '[' + _moment2.default.utc().format(TIMESTAMP_FORMAT) + ']';

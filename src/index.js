@@ -14,7 +14,6 @@ import GeminiService from './services/gemini'
 
 const TIMESTAMP_FORMAT = 'HH:mm:ss.SSS'
 
-// Initialize logger
 const logger = new winston.Logger().add(winston.transports.Console, {
     timestamp: () => `[${moment.utc().format(TIMESTAMP_FORMAT)}]`,
     colorize: true,
@@ -184,7 +183,7 @@ async function determineCurrentEthereumPosition(){
 
 
   let currentGeminiBalances = await geminiService.availableBalances()
-  logger.info(`current Gemini Balances: ${JSON.stringify(currentGeminiBalances)}`)
+  //logger.info(`current Gemini Balances: ${JSON.stringify(currentGeminiBalances)}`)
 
 
   //let currentGdaxBalances = await gdaxService.getMyAvailableBalances()
