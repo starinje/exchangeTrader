@@ -186,6 +186,7 @@ async function determineCurrentEthereumPosition(){
   let currentGeminiBalances = await geminiService.availableBalances()
   logger.info(`current Gemini Balances: ${JSON.stringify(currentGeminiBalances)}`)
 
+
   //let currentGdaxBalances = await gdaxService.getMyAvailableBalances()
   //console.log(`current Gdax Balances: ${currentGdaxBalances}`)
 

@@ -78,11 +78,6 @@ var GdaxService = function GdaxService(options) {
                     switch (_context2.prev = _context2.next) {
                         case 0:
 
-                            // this code should attempt to place limit order that wont incur transaction fees
-                            // perhaps place buy orders at prices very close to the ask price but not in a current slot so that no taker fee is taken
-                            // likewise place sell orders very close to the bid price but not in a current slot so that no taker fee is taken
-                            // even if it is only successful some of the time it will help
-
                             // place market trade on gdax 
                             _this.logger.info('placing ' + tradeDetails.action + ' trade on Gdax for ' + tradeDetails.quantity + ' ethereum at $' + tradeDetails.rate + '/eth');
                             return _context2.abrupt('return', Promise.resolve('trade completed for GDAX'));

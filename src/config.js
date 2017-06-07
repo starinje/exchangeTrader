@@ -7,8 +7,10 @@ module.exports = {
     },
     gdax: {
         url: 'https://api.gdax.com/products/ETH-USD/book?level=2',
-        key: 'key',
-        secret: 'secret'
+        sandbox: false,
+        key: 'debd5e0dc3ea74c87550a75d275c51bf',
+        secret: '0HrdzdopW5qnf74CgeErVN0HwwDcuYzs7M49cWcQ4FCAHY1TJuDQl48so7fvpa8Hwr6Co/+GhKeizMZsP8qZ8A==',
+        passphrase: 'if61ndcnzod'
     },
     ethereumTradingQuantity: .0001,
     takeProfitTradeThreshold: -3,
@@ -18,10 +20,16 @@ module.exports = {
     transactionPercentageGdax: .3
 }
 
-// live account
+// Gemini live account
 // key: 'A2Vi33Da5ESehulxBYJD',
 // secret: '4Xgj1U5HrxgHB7bvVeTjftBzN2nK',
 
-// sandbox account
+// Gemini sandbox account
 // key: 'xsIG0UZ79qeFwhZLu9j3',
 // secret: '46aUvMr4nAaRXrpr9rJ65okqF5JR',
+
+
+//Gdax Live Account
+// key: 'debd5e0dc3ea74c87550a75d275c51bf',
+// secret: '0HrdzdopW5qnf74CgeErVN0HwwDcuYzs7M49cWcQ4FCAHY1TJuDQl48so7fvpa8Hwr6Co/+GhKeizMZsP8qZ8A==',
+// passphrase: 'if61ndcnzod'
