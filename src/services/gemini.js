@@ -131,17 +131,18 @@ export default class GeminiService {
             let orderResults = await this.newOrder(orderParams)
             
             let tradeCompleted = false
-            let tradeCompletedDetails
 
             while(!tradeCompleted){
                 await Promise.delay(1000)
                 let tradeStatus = await this.orderStatus(orderResults.order_id)
                 if(tradeStatus.executed_amount == tradeStatus.original_amount){
                     tradeCompleted = true
-                    tradeCompletedDetails = tradeStatus
                 }
             }
-            return tradeCompletedDetails
+
+            let tradeSummary = await this.orderHistory(orderResults.order_id)
+
+            return {...tradeSummary, action: tradeDetails.action}
 
         } catch(err){
             return Promise.reject(`gemini executeTrade |> ${err}`)
@@ -172,6 +173,39 @@ export default class GeminiService {
     orderStatus = (orderId) => {
         try {
             return this.requestPrivate(`/order/status`, { order_id: orderId })
+        } catch(err){
+            return Promise.reject(`gemini orderStatus |> ${err}`)
+        }
+    }
+
+    orderHistory = async (orderId) => {
+        try {
+            let trades = await this.requestPrivate(`/mytrades`, { symbol: 'ETHUSD'} )
+            let orderTrades = trades.filter((trade) =>{
+                return trade.order_id == orderId
+            })
+
+            let fee = 0
+            let amount = 0
+            let price = 0
+            let numberOfTrades = 0
+
+            orderTrades.forEach((trade) => {
+                fee = parseFloat(trade.fee_amount) + fee
+                amount = parseFloat(trade.amount) + amount
+                price = parseFloat(trade.price) + price
+                numberOfTrades = numberOfTrades + 1
+            })
+
+            let averagePrice = price / numberOfTrades
+
+            let tradeSummary = {
+                fee,
+                amount,
+                price: averagePrice
+            }
+
+            return tradeSummary
         } catch(err){
             return Promise.reject(`gemini orderStatus |> ${err}`)
         }

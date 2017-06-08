@@ -62,6 +62,7 @@ export default class GdaxService {
             }
 
             let orderResults = await this.newOrder(orderParams)
+            orderResults = JSON.parse(orderResults.body)
 
             let tradeCompleted = false
             let tradeCompletedDetails
@@ -75,7 +76,14 @@ export default class GdaxService {
                 await Promise.delay(1000)
             }
 
-            return tradeCompletedDetails
+            let tradeSummary = {
+                fee: parseFloat(tradeCompletedDetails.fill_fees),
+                amount: parseFloat(tradeCompletedDetails.size),
+                price: parseFloat(tradeCompletedDetails.price),
+                action: tradeDetails.action
+            }
+
+            return tradeSummary
 
         } catch(err){
             return Promise.reject(`gdax executeTrade |> ${err}`)
@@ -103,10 +111,17 @@ export default class GdaxService {
         }
     }
 
+    
     availableBalances = async () => {
         try {
+            return new Promise((resolve, reject) => {
+                this.authedClient.getAccounts((err, results, data) => {
+                    return resolve(data)
+                })
+            })
+           
         } catch(err){
-            return Promise.reject(`gdax availableBalances |> ${err}`)
+            return Promise.reject(`gdax accounts |> ${err}`)
         }
     }
 

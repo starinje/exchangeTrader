@@ -187,7 +187,7 @@ var GeminiService = function GeminiService(options) {
 
     this.executeTrade = function () {
         var _ref5 = _asyncToGenerator(regeneratorRuntime.mark(function _callee4(tradeDetails) {
-            var orderParams, orderResults, tradeCompleted, tradeCompletedDetails, tradeStatus;
+            var orderParams, orderResults, tradeCompleted, tradeStatus, tradeSummary;
             return regeneratorRuntime.wrap(function _callee4$(_context4) {
                 while (1) {
                     switch (_context4.prev = _context4.next) {
@@ -210,45 +210,48 @@ var GeminiService = function GeminiService(options) {
                         case 5:
                             orderResults = _context4.sent;
                             tradeCompleted = false;
-                            tradeCompletedDetails = void 0;
 
-                        case 8:
+                        case 7:
                             if (tradeCompleted) {
-                                _context4.next = 17;
+                                _context4.next = 16;
                                 break;
                             }
 
-                            _context4.next = 11;
+                            _context4.next = 10;
                             return _bluebird2.default.delay(1000);
 
-                        case 11:
-                            _context4.next = 13;
+                        case 10:
+                            _context4.next = 12;
                             return _this.orderStatus(orderResults.order_id);
 
-                        case 13:
+                        case 12:
                             tradeStatus = _context4.sent;
 
                             if (tradeStatus.executed_amount == tradeStatus.original_amount) {
                                 tradeCompleted = true;
-                                tradeCompletedDetails = tradeStatus;
                             }
-                            _context4.next = 8;
+                            _context4.next = 7;
                             break;
 
-                        case 17:
-                            return _context4.abrupt('return', tradeCompletedDetails);
+                        case 16:
+                            _context4.next = 18;
+                            return _this.orderHistory(orderResults.order_id);
 
-                        case 20:
-                            _context4.prev = 20;
+                        case 18:
+                            tradeSummary = _context4.sent;
+                            return _context4.abrupt('return', _extends({}, tradeSummary, { action: tradeDetails.action }));
+
+                        case 22:
+                            _context4.prev = 22;
                             _context4.t0 = _context4['catch'](0);
                             return _context4.abrupt('return', _bluebird2.default.reject('gemini executeTrade |> ' + _context4.t0));
 
-                        case 23:
+                        case 25:
                         case 'end':
                             return _context4.stop();
                     }
                 }
-            }, _callee4, _this, [[0, 20]]);
+            }, _callee4, _this, [[0, 22]]);
         }));
 
         return function (_x5) {
@@ -319,6 +322,61 @@ var GeminiService = function GeminiService(options) {
             return _bluebird2.default.reject('gemini orderStatus |> ' + err);
         }
     };
+
+    this.orderHistory = function () {
+        var _ref8 = _asyncToGenerator(regeneratorRuntime.mark(function _callee7(orderId) {
+            var trades, orderTrades, fee, amount, price, numberOfTrades, averagePrice, tradeSummary;
+            return regeneratorRuntime.wrap(function _callee7$(_context7) {
+                while (1) {
+                    switch (_context7.prev = _context7.next) {
+                        case 0:
+                            _context7.prev = 0;
+                            _context7.next = 3;
+                            return _this.requestPrivate('/mytrades', { symbol: 'ETHUSD' });
+
+                        case 3:
+                            trades = _context7.sent;
+                            orderTrades = trades.filter(function (trade) {
+                                return trade.order_id == orderId;
+                            });
+                            fee = 0;
+                            amount = 0;
+                            price = 0;
+                            numberOfTrades = 0;
+
+
+                            orderTrades.forEach(function (trade) {
+                                fee = parseFloat(trade.fee_amount) + fee;
+                                amount = parseFloat(trade.amount) + amount;
+                                price = parseFloat(trade.price) + price;
+                                numberOfTrades = numberOfTrades + 1;
+                            });
+
+                            averagePrice = price / numberOfTrades;
+                            tradeSummary = {
+                                fee: fee,
+                                amount: amount,
+                                price: averagePrice
+                            };
+                            return _context7.abrupt('return', tradeSummary);
+
+                        case 15:
+                            _context7.prev = 15;
+                            _context7.t0 = _context7['catch'](0);
+                            return _context7.abrupt('return', _bluebird2.default.reject('gemini orderStatus |> ' + _context7.t0));
+
+                        case 18:
+                        case 'end':
+                            return _context7.stop();
+                    }
+                }
+            }, _callee7, _this, [[0, 15]]);
+        }));
+
+        return function (_x7) {
+            return _ref8.apply(this, arguments);
+        };
+    }();
 
     this.options = options || {};
     this.logger = this.options.logger;

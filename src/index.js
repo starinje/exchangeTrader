@@ -11,20 +11,10 @@ import config from './config'
 
 import GdaxService from './services/gdax'
 import GeminiService from './services/gemini'
-
-const TIMESTAMP_FORMAT = 'HH:mm:ss.SSS'
-
-const logger = new winston.Logger().add(winston.transports.Console, {
-    timestamp: () => `[${moment.utc().format(TIMESTAMP_FORMAT)}]`,
-    colorize: true,
-    prettyPrint: true,
-    level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
-})
+import logger from './services/logger.js'
 
 const gdaxService = new GdaxService({...config.gdax, logger, })
 const geminiService = new GeminiService({...config.gemini, logger})
-
-let aggregateProfit = 0
 
 main()
 
@@ -34,6 +24,7 @@ async function main(){
     console.log('')
     console.log('')
     logger.info('running arbitrage strategy...')
+ 
 
     let orderBookGemini = await geminiService.getOrderBook()
     let orderBookGdax = await gdaxService.getOrderBook()
@@ -49,7 +40,31 @@ async function main(){
       return 
     }
     
-    let results = await execute(positionChange)
+    let tradeResults = await execute(positionChange)
+
+    let gdaxResults = results.gdax
+    let geminiResults = results.gemini
+
+    let buyValue
+    let sellValue
+
+    switch(results.takeProfit){
+      case 'gdax':
+        buyValue = (tradeResults.gemini.price*tradeResults.gemini.amount) - tradeResults.gemini.fee
+        sellValue = (tradeResults.gdax.price*tradeResults.gdax.amount) - tradeResults.gdax.fee
+        break
+  
+      case 'gemini':
+        sellValue = (tradeResults.gemini.price*tradeResults.gemini.amount) - tradeResults.gemini.fee
+        buyValue = (tradeResults.gdax.price*tradeResults.gdax.amount) - tradeResults.gdax.fee
+        break
+    }
+    
+    let profit = (sellValue - buyValue) / buyValue
+    
+    logger.info(`successful ${tradeResults.gdax.action} on Gdax for ${tradeResults.gdax.amount} ethereum at $${tradeResults.gdax.price}/eth, fee of ${tradeResults.gdax.fee}`)
+    logger.info(`successful ${tradeResults.gemini.action} on Gemini for ${tradeResults.gemini.amount} ethereum at ${tradeResults.gemini.price}/eth, fee of ${tradeResults.gemini.fee}`)
+    logger.info(`profit percentage: ${profit}`)
     
   } catch(err){
     logger.info(`error: ${err}`)
@@ -109,7 +124,7 @@ async function determinePositionChange(orderBooks){
     logger.info(`estimated net profit: ${estimatedNetProfit}`)
 
     positionChange = {
-      type: 'takeProfit',
+      takeProfit: 'gdax',
       gdax : {
         action: 'sell',
         quantity: ethereumTradingQuantity,
@@ -139,7 +154,7 @@ async function determinePositionChange(orderBooks){
     logger.info(`estimated net profit: ${estimatedNetProfit}`)
 
     positionChange= {
-      type: 'swapFunds',
+      takeProfit: 'gemini',
       gemini: {
         action: 'sell',
         quantity: ethereumTradingQuantity,
@@ -172,27 +187,49 @@ async function execute(positionChange){
   let tradeResults = await Promise.all([gdaxService.executeTrade(positionChange.gdax), geminiService.executeTrade(positionChange.gemini)])
 
   let tradeLog = {
-    ...tradeResults,
-    type: positionChange.type
+    gdax: tradeResults[0],
+    gemini: tradeResults[1],
+    takeProfit: positionChange.takeProfit
   }
-  
+
   return tradeLog
 }
 
 async function determineCurrentEthereumPosition(){
 
-
+  // determine gemini ethereum balance
   let currentGeminiBalances = await geminiService.availableBalances()
-  //logger.info(`current Gemini Balances: ${JSON.stringify(currentGeminiBalances)}`)
+  
+  let geminiUsdBalance = currentGeminiBalances.filter(accountDetails => accountDetails.currency == 'USD')
+  geminiUsdBalance = parseFloat(geminiUsdBalance[0].amount)
 
+  let geminiEthBalance = currentGeminiBalances.filter(accountDetails => accountDetails.currency == 'ETH')
+  geminiEthBalance = parseFloat(geminiEthBalance[0].amount)
 
-  //let currentGdaxBalances = await gdaxService.getMyAvailableBalances()
-  //console.log(`current Gdax Balances: ${currentGdaxBalances}`)
+  // determine gdax ethereum balance
+  let currentGdaxBalances = await gdaxService.availableBalances()
+  
+  let gdaxUsdBalance = currentGdaxBalances.filter((accountDetails) => accountDetails.currency == 'USD')
+  gdaxUsdBalance = parseFloat(gdaxUsdBalance[0].balance)
 
-  // check balances on both exchanges
-  // return name of exchange with ethereum balance (account to sell from)
-  return 'gdax'
+  let gdaxEthBalance = currentGdaxBalances.filter((accountDetails) => accountDetails.currency == 'ETH')
+  gdaxEthBalance = parseFloat(gdaxEthBalance[0].balance)
 
+  logger.info(`geminiEthBalance: ${geminiEthBalance}`)
+  logger.info(`geminiUsdBalance: ${geminiUsdBalance}`)
+  logger.info(`gdaxEthBalance: ${gdaxEthBalance}`)
+  logger.info(`gdaxUsdBalance: ${gdaxUsdBalance}`)
+
+  let ethereumBalance
+  if(geminiEthBalance > gdaxEthBalance){
+    ethereumBalance = 'gemini'
+  } else if (gdaxEthBalance > geminiEthBalance){
+    ethereumBalance = 'gdax'
+  }
+
+  logger.info(`ethereum balance is in ${ethereumBalance}`)
+
+  return ethereumBalance
 }
 
 function calculateBidPrice(bids, ethereumTradingQuantity){

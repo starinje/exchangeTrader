@@ -4,7 +4,7 @@ var _extends = Object.assign || function (target) { for (var i = 1; i < argument
 
 var main = function () {
   var _ref = _asyncToGenerator(regeneratorRuntime.mark(function _callee() {
-    var orderBookGemini, orderBookGdax, orderBooks, positionChange, results;
+    var orderBookGemini, orderBookGdax, orderBooks, positionChange, results, gdaxResults, geminiResults, buyValue, sellValue, profit;
     return regeneratorRuntime.wrap(function _callee$(_context) {
       while (1) {
         switch (_context.prev = _context.next) {
@@ -13,7 +13,7 @@ var main = function () {
 
             console.log('');
             console.log('');
-            logger.info('running arbitrage strategy...');
+            _logger2.default.info('running arbitrage strategy...');
 
             _context.next = 6;
             return geminiService.getOrderBook();
@@ -48,30 +48,56 @@ var main = function () {
 
           case 18:
             results = _context.sent;
-            _context.next = 24;
+            gdaxResults = results.gdax;
+            geminiResults = results.gemini;
+            buyValue = void 0;
+            sellValue = void 0;
+            _context.t0 = results.takeProfit;
+            _context.next = _context.t0 === 'gdax' ? 26 : _context.t0 === 'gemini' ? 29 : 32;
             break;
 
-          case 21:
-            _context.prev = 21;
-            _context.t0 = _context['catch'](0);
-
-            logger.info('error: ' + _context.t0);
-
-          case 24:
-            _context.prev = 24;
-            _context.next = 27;
-            return _bluebird2.default.delay(_config2.default.timeDelta);
-
-          case 27:
-            main();
-            return _context.finish(24);
+          case 26:
+            buyValue = geminiResults.price * geminiResults.amount - geminiResults.fee;
+            sellValue = gdaxResults.price * gdaxResults.amount - gdaxResults.fee;
+            return _context.abrupt('break', 32);
 
           case 29:
+            sellValue = geminiResults.price * geminiResults.amount - geminiResults.fee;
+            buyValue = gdaxResults.price * gdaxResults.amount - gdaxResults.fee;
+            return _context.abrupt('break', 32);
+
+          case 32:
+            profit = (sellValue - buyValue) / buyValue;
+
+
+            _logger2.default.info('successful ' + gdaxResults.action + ' on Gdax for ' + gdaxResults.amount + ' ethereum at $' + gdaxResults.price + '/eth, fee of ' + gdaxResults.fee);
+            _logger2.default.info('successful ' + geminiResults.action + ' on Gemini for ' + geminiResults.amount + ' ethereum at ' + geminiResults.price + '/eth, fee of ' + geminiResults.fee);
+            _logger2.default.info('profit percentage: ' + profit);
+
+            _context.next = 41;
+            break;
+
+          case 38:
+            _context.prev = 38;
+            _context.t1 = _context['catch'](0);
+
+            _logger2.default.info('error: ' + _context.t1);
+
+          case 41:
+            _context.prev = 41;
+            _context.next = 44;
+            return _bluebird2.default.delay(_config2.default.timeDelta);
+
+          case 44:
+            main();
+            return _context.finish(41);
+
+          case 46:
           case 'end':
             return _context.stop();
         }
       }
-    }, _callee, this, [[0, 21, 24, 29]]);
+    }, _callee, this, [[0, 38, 41, 46]]);
   }));
 
   return function main() {
@@ -96,10 +122,10 @@ var determinePositionChange = function () {
             askPriceGdax = calculateAskPrice(orderBooks.gdax.asks, ethereumTradingQuantity);
 
 
-            logger.info('bidPriceGemini: ' + bidPriceGemini);
-            logger.info('bidPriceGdax: ' + bidPriceGdax);
-            logger.info('askPriceGemini: ' + askPriceGemini);
-            logger.info('askPriceGdax: ' + askPriceGdax);
+            _logger2.default.info('bidPriceGemini: ' + bidPriceGemini);
+            _logger2.default.info('bidPriceGdax: ' + bidPriceGdax);
+            _logger2.default.info('askPriceGemini: ' + askPriceGemini);
+            _logger2.default.info('askPriceGdax: ' + askPriceGdax);
 
             transactionPercentageGemini = _config2.default.transactionPercentageGemini;
             transactionPercentageGdax = _config2.default.transactionPercentageGdax;
@@ -113,15 +139,15 @@ var determinePositionChange = function () {
             estimatedNetProfit = void 0;
 
 
-            logger.info('gdaxBasePercentageDifference: ' + gdaxBasePercentageDifference);
-            logger.info('geminiBasePercentageDifference: ' + geminiBasePercentageDifference);
+            _logger2.default.info('gdaxBasePercentageDifference: ' + gdaxBasePercentageDifference);
+            _logger2.default.info('geminiBasePercentageDifference: ' + geminiBasePercentageDifference);
 
             if (!gdaxRateIsHigherAndProfitable) {
               _context2.next = 38;
               break;
             }
 
-            logger.info('gdax rate is higher and profitable');
+            _logger2.default.info('gdax rate is higher and profitable');
 
             totalSaleValue = bidPriceGdax * ethereumTradingQuantity;
             totalPurchaseCost = askPriceGemini * ethereumTradingQuantity;
@@ -130,14 +156,14 @@ var determinePositionChange = function () {
             estimatedTransactionFees = transactionPercentageGdax / 100 * totalSaleValue + transactionPercentageGemini / 100 * totalPurchaseCost;
             estimatedNetProfit = estimatedGrossProfit - estimatedTransactionFees;
 
-            logger.info('estimated total sale value: ' + totalSaleValue);
-            logger.info('estimated total purchase cost: ' + totalPurchaseCost);
-            logger.info('estimated gross profit: ' + estimatedGrossProfit);
-            logger.info('estimated transaction fees: ' + estimatedTransactionFees);
-            logger.info('estimated net profit: ' + estimatedNetProfit);
+            _logger2.default.info('estimated total sale value: ' + totalSaleValue);
+            _logger2.default.info('estimated total purchase cost: ' + totalPurchaseCost);
+            _logger2.default.info('estimated gross profit: ' + estimatedGrossProfit);
+            _logger2.default.info('estimated transaction fees: ' + estimatedTransactionFees);
+            _logger2.default.info('estimated net profit: ' + estimatedNetProfit);
 
             positionChange = {
-              type: 'takeProfit',
+              takeProfit: 'gdax',
               gdax: {
                 action: 'sell',
                 quantity: ethereumTradingQuantity,
@@ -160,7 +186,7 @@ var determinePositionChange = function () {
               break;
             }
 
-            logger.info('Gemini Rate Is Swappable');
+            _logger2.default.info('Gemini Rate Is Swappable');
 
             _totalSaleValue = bidPriceGemini * ethereumTradingQuantity;
             _totalPurchaseCost = askPriceGdax * ethereumTradingQuantity;
@@ -169,14 +195,14 @@ var determinePositionChange = function () {
             estimatedTransactionFees = transactionPercentageGemini / 100 * _totalSaleValue + transactionPercentageGdax / 100 * _totalPurchaseCost;
             estimatedNetProfit = estimatedGrossProfit - estimatedTransactionFees;
 
-            logger.info('estimated total sale value: ' + _totalSaleValue);
-            logger.info('estimated total purchase cost: ' + _totalPurchaseCost);
-            logger.info('estimated gross profit: ' + estimatedGrossProfit);
-            logger.info('estimated transaction fees: ' + estimatedTransactionFees);
-            logger.info('estimated net profit: ' + estimatedNetProfit);
+            _logger2.default.info('estimated total sale value: ' + _totalSaleValue);
+            _logger2.default.info('estimated total purchase cost: ' + _totalPurchaseCost);
+            _logger2.default.info('estimated gross profit: ' + estimatedGrossProfit);
+            _logger2.default.info('estimated transaction fees: ' + estimatedTransactionFees);
+            _logger2.default.info('estimated net profit: ' + estimatedNetProfit);
 
             positionChange = {
-              type: 'swapFunds',
+              takeProfit: 'gemini',
               gemini: {
                 action: 'sell',
                 quantity: ethereumTradingQuantity,
@@ -239,9 +265,11 @@ var execute = function () {
 
           case 2:
             tradeResults = _context3.sent;
-            tradeLog = _extends({}, tradeResults, {
-              type: positionChange.type
-            });
+            tradeLog = {
+              gdax: tradeResults[0],
+              gemini: tradeResults[1],
+              takeProfit: positionChange.takeProfit
+            };
             return _context3.abrupt('return', tradeLog);
 
           case 5:
@@ -259,7 +287,7 @@ var execute = function () {
 
 var determineCurrentEthereumPosition = function () {
   var _ref4 = _asyncToGenerator(regeneratorRuntime.mark(function _callee4() {
-    var currentGeminiBalances;
+    var currentGeminiBalances, geminiUsdBalance, geminiEthBalance, currentGdaxBalances, gdaxUsdBalance, gdaxEthBalance, ethereumBalance;
     return regeneratorRuntime.wrap(function _callee4$(_context4) {
       while (1) {
         switch (_context4.prev = _context4.next) {
@@ -269,9 +297,54 @@ var determineCurrentEthereumPosition = function () {
 
           case 2:
             currentGeminiBalances = _context4.sent;
-            return _context4.abrupt('return', 'gdax');
+            geminiUsdBalance = currentGeminiBalances.filter(function (accountDetails) {
+              return accountDetails.currency == 'USD';
+            });
 
-          case 4:
+            geminiUsdBalance = parseFloat(geminiUsdBalance[0].amount);
+
+            geminiEthBalance = currentGeminiBalances.filter(function (accountDetails) {
+              return accountDetails.currency == 'ETH';
+            });
+
+            geminiEthBalance = parseFloat(geminiEthBalance[0].amount);
+
+            // determine gemini ethereum balance
+            _context4.next = 9;
+            return gdaxService.availableBalances();
+
+          case 9:
+            currentGdaxBalances = _context4.sent;
+            gdaxUsdBalance = currentGdaxBalances.filter(function (accountDetails) {
+              return accountDetails.currency == 'USD';
+            });
+
+            gdaxUsdBalance = parseFloat(gdaxUsdBalance[0].balance);
+
+            gdaxEthBalance = currentGdaxBalances.filter(function (accountDetails) {
+              return accountDetails.currency == 'ETH';
+            });
+
+            gdaxEthBalance = parseFloat(gdaxEthBalance[0].balance);
+
+            _logger2.default.info('geminiEthBalance: ' + geminiEthBalance);
+            _logger2.default.info('geminiUsdBalance: ' + geminiUsdBalance);
+            _logger2.default.info('gdaxEthBalance: ' + gdaxEthBalance);
+            _logger2.default.info('gdaxUsdBalance: ' + gdaxUsdBalance);
+
+            ethereumBalance = void 0;
+
+            if (geminiEthBalance > gdaxEthBalance) {
+              ethereumBalance = 'gemini';
+            } else if (gdaxEthBalance > geminiEthBalance) {
+              ethereumBalance = 'gdax';
+            }
+
+            _logger2.default.info('ethereum balance is in ' + ethereumBalance);
+
+            return _context4.abrupt('return', ethereumBalance);
+
+          case 22:
           case 'end':
             return _context4.stop();
         }
@@ -328,23 +401,40 @@ var _gemini = require('./services/gemini');
 
 var _gemini2 = _interopRequireDefault(_gemini);
 
+var _logger = require('./logger.js');
+
+var _logger2 = _interopRequireDefault(_logger);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, arguments); return new _bluebird2.default(function (resolve, reject) { function step(key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { return _bluebird2.default.resolve(value).then(function (value) { step("next", value); }, function (err) { step("throw", err); }); } } return step("next"); }); }; }
 
-var TIMESTAMP_FORMAT = 'HH:mm:ss.SSS';
+// const TIMESTAMP_FORMAT = 'HH:mm:ss.SSS'
+// const logDir = 'log';
+// const tsFormat = () => (new Date()).toLocaleTimeString();
 
-var logger = new _winston2.default.Logger().add(_winston2.default.transports.Console, {
-  timestamp: function timestamp() {
-    return '[' + _moment2.default.utc().format(TIMESTAMP_FORMAT) + ']';
-  },
-  colorize: true,
-  prettyPrint: true,
-  level: process.env.NODE_ENV === 'production' ? 'info' : 'debug'
-});
+// if (!fs.existsSync(logDir)) {
+//   fs.mkdirSync(logDir);
+// }
 
-var gdaxService = new _gdax2.default(_extends({}, _config2.default.gdax, { logger: logger }));
-var geminiService = new _gemini2.default(_extends({}, _config2.default.gemini, { logger: logger }));
+// const logger = new (winston.Logger)({
+//   transports: [
+//     new (winston.transports.Console)({
+//       timestamp: () => `[${moment.utc().format(TIMESTAMP_FORMAT)}]`,
+//       colorize: true,
+//       prettyPrint: true,
+//       level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+//   }),
+//     new (winston.transports.File)({
+//       filename: `${logDir}/results.log`,
+//       timestamp: tsFormat,
+//       level: 'info'
+//     })
+//   ]
+// });
+
+var gdaxService = new _gdax2.default(_extends({}, _config2.default.gdax, { logger: _logger2.default }));
+var geminiService = new _gemini2.default(_extends({}, _config2.default.gemini, { logger: _logger2.default }));
 
 var aggregateProfit = 0;
 

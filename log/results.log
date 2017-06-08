@@ -1,0 +1,35 @@
+{"level":"info","message":"running arbitrage strategy...","timestamp":"6:33:07 AM"}
+{"level":"info","message":"bidPriceGemini: 260.09","timestamp":"6:33:07 AM"}
+{"level":"info","message":"bidPriceGdax: 260.78","timestamp":"6:33:07 AM"}
+{"level":"info","message":"askPriceGemini: 260.1","timestamp":"6:33:07 AM"}
+{"level":"info","message":"askPriceGdax: 260.83","timestamp":"6:33:07 AM"}
+{"level":"info","message":"gdaxBasePercentageDifference: 0.2614379084967128","timestamp":"6:33:07 AM"}
+{"level":"info","message":"geminiBasePercentageDifference: -0.28370969597055906","timestamp":"6:33:07 AM"}
+{"level":"info","message":"running arbitrage strategy...","timestamp":"6:33:09 AM"}
+{"level":"info","message":"bidPriceGemini: 260.09","timestamp":"6:33:09 AM"}
+{"level":"info","message":"bidPriceGdax: 260.78","timestamp":"6:33:09 AM"}
+{"level":"info","message":"askPriceGemini: 260.1","timestamp":"6:33:09 AM"}
+{"level":"info","message":"askPriceGdax: 260.83","timestamp":"6:33:09 AM"}
+{"level":"info","message":"gdaxBasePercentageDifference: 0.2614379084967128","timestamp":"6:33:09 AM"}
+{"level":"info","message":"geminiBasePercentageDifference: -0.28370969597055906","timestamp":"6:33:09 AM"}
+{"level":"info","message":"running arbitrage strategy...","timestamp":"6:43:03 AM"}
+{"level":"info","message":"bidPriceGemini: 260.09","timestamp":"6:43:04 AM"}
+{"level":"info","message":"bidPriceGdax: 260.99","timestamp":"6:43:04 AM"}
+{"level":"info","message":"askPriceGemini: 260.1","timestamp":"6:43:04 AM"}
+{"level":"info","message":"askPriceGdax: 261","timestamp":"6:43:04 AM"}
+{"level":"info","message":"gdaxBasePercentageDifference: 0.34217608612071754","timestamp":"6:43:04 AM"}
+{"level":"info","message":"geminiBasePercentageDifference: -0.3486590038314272","timestamp":"6:43:04 AM"}
+{"level":"info","message":"running arbitrage strategy...","timestamp":"6:43:06 AM"}
+{"level":"info","message":"bidPriceGemini: 260.09","timestamp":"6:43:06 AM"}
+{"level":"info","message":"bidPriceGdax: 260.99","timestamp":"6:43:06 AM"}
+{"level":"info","message":"askPriceGemini: 260.1","timestamp":"6:43:06 AM"}
+{"level":"info","message":"askPriceGdax: 261","timestamp":"6:43:06 AM"}
+{"level":"info","message":"gdaxBasePercentageDifference: 0.34217608612071754","timestamp":"6:43:06 AM"}
+{"level":"info","message":"geminiBasePercentageDifference: -0.3486590038314272","timestamp":"6:43:06 AM"}
+{"level":"info","message":"running arbitrage strategy...","timestamp":"6:43:08 AM"}
+{"level":"info","message":"bidPriceGemini: 260.09","timestamp":"6:43:08 AM"}
+{"level":"info","message":"bidPriceGdax: 260.99","timestamp":"6:43:08 AM"}
+{"level":"info","message":"askPriceGemini: 260.1","timestamp":"6:43:08 AM"}
+{"level":"info","message":"askPriceGdax: 261","timestamp":"6:43:08 AM"}
+{"level":"info","message":"gdaxBasePercentageDifference: 0.34217608612071754","timestamp":"6:43:08 AM"}
+{"level":"info","message":"geminiBasePercentageDifference: -0.3486590038314272","timestamp":"6:43:08 AM"}

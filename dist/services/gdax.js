@@ -87,7 +87,7 @@ var GdaxService = function GdaxService(options) {
 
     this.executeTrade = function () {
         var _ref2 = _asyncToGenerator(regeneratorRuntime.mark(function _callee2(tradeDetails) {
-            var orderParams, orderResults, tradeCompleted, tradeCompletedDetails, tradeStatus;
+            var orderParams, orderResults, tradeCompleted, tradeCompletedDetails, tradeStatus, tradeSummary;
             return regeneratorRuntime.wrap(function _callee2$(_context2) {
                 while (1) {
                     switch (_context2.prev = _context2.next) {
@@ -107,46 +107,55 @@ var GdaxService = function GdaxService(options) {
 
                         case 5:
                             orderResults = _context2.sent;
+
+                            orderResults = JSON.parse(orderResults.body);
+
                             tradeCompleted = false;
                             tradeCompletedDetails = void 0;
 
-                        case 8:
+                        case 9:
                             if (tradeCompleted) {
-                                _context2.next = 17;
+                                _context2.next = 18;
                                 break;
                             }
 
-                            _context2.next = 11;
+                            _context2.next = 12;
                             return _this.orderStatus(orderResults.id);
 
-                        case 11:
+                        case 12:
                             tradeStatus = _context2.sent;
 
                             if (tradeStatus.status == 'done') {
                                 tradeCompleted = true;
                                 tradeCompletedDetails = tradeStatus;
                             }
-                            _context2.next = 15;
+                            _context2.next = 16;
                             return _bluebird2.default.delay(1000);
 
-                        case 15:
-                            _context2.next = 8;
+                        case 16:
+                            _context2.next = 9;
                             break;
 
-                        case 17:
-                            return _context2.abrupt('return', tradeCompletedDetails);
+                        case 18:
+                            tradeSummary = {
+                                fee: parseFloat(tradeCompletedDetails.fill_fees),
+                                amount: parseFloat(tradeCompletedDetails.size),
+                                price: parseFloat(tradeCompletedDetails.price),
+                                action: tradeDetails.action
+                            };
+                            return _context2.abrupt('return', tradeSummary);
 
-                        case 20:
-                            _context2.prev = 20;
+                        case 22:
+                            _context2.prev = 22;
                             _context2.t0 = _context2['catch'](0);
                             return _context2.abrupt('return', _bluebird2.default.reject('gdax executeTrade |> ' + _context2.t0));
 
-                        case 23:
+                        case 25:
                         case 'end':
                             return _context2.stop();
                     }
                 }
-            }, _callee2, _this, [[0, 20]]);
+            }, _callee2, _this, [[0, 22]]);
         }));
 
         return function (_x) {
@@ -199,20 +208,23 @@ var GdaxService = function GdaxService(options) {
                 switch (_context4.prev = _context4.next) {
                     case 0:
                         _context4.prev = 0;
-                        _context4.next = 6;
-                        break;
+                        return _context4.abrupt('return', new _bluebird2.default(function (resolve, reject) {
+                            _this.authedClient.getAccounts(function (err, results, data) {
+                                return resolve(data);
+                            });
+                        }));
 
-                    case 3:
-                        _context4.prev = 3;
+                    case 4:
+                        _context4.prev = 4;
                         _context4.t0 = _context4['catch'](0);
-                        return _context4.abrupt('return', _bluebird2.default.reject('gdax availableBalances |> ' + _context4.t0));
+                        return _context4.abrupt('return', _bluebird2.default.reject('gdax accounts |> ' + _context4.t0));
 
-                    case 6:
+                    case 7:
                     case 'end':
                         return _context4.stop();
                 }
             }
-        }, _callee4, _this, [[0, 3]]);
+        }, _callee4, _this, [[0, 4]]);
     }));
 
     this.orderStatus = function (orderId) {
