@@ -40,15 +40,15 @@ async function main(){
       return 
     }
     
-    let tradeResults = await execute(positionChange)
+    let tradeResults = await execute(positionChange, orderBooks)
 
-    let gdaxResults = results.gdax
-    let geminiResults = results.gemini
+    let gdaxResults = tradeResults.gdax
+    let geminiResults = tradeResults.gemini
 
     let buyValue
     let sellValue
 
-    switch(results.takeProfit){
+    switch(tradeResults.takeProfit){
       case 'gdax':
         buyValue = (tradeResults.gemini.price*tradeResults.gemini.amount) - tradeResults.gemini.fee
         sellValue = (tradeResults.gdax.price*tradeResults.gdax.amount) - tradeResults.gdax.fee
@@ -182,9 +182,10 @@ async function determinePositionChange(orderBooks){
   }
 }
 
-async function execute(positionChange){
+async function execute(positionChange, orderBooks){
 
-  let tradeResults = await Promise.all([gdaxService.executeTrade(positionChange.gdax), geminiService.executeTrade(positionChange.gemini)])
+  let tradeResults = await Promise.all([gdaxService.executeTrade(positionChange.gdax, orderBooks.gdax), geminiService.executeTrade(positionChange.gemini, orderBooks.gemini)])
+  //let tradeResults = await Promise.all([gdaxService.executeTradeMakerOnly(positionChange.gdax, orderBooks.gdax)])
 
   let tradeLog = {
     gdax: tradeResults[0],

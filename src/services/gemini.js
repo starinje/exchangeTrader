@@ -115,9 +115,22 @@ export default class GeminiService {
 
     }
 
-    executeTrade = async (tradeDetails) => {
+    executeTrade = async (tradeDetails, orderBook) => {
         try{
-            this.logger.info(`placing ${tradeDetails.action} trade on Gemini for ${tradeDetails.quantity} ethereum at $${tradeDetails.rate}/eth`)
+            orderBook = await this.getOrderBook()
+            this.logger.info('retrieving latest order book from gemini')
+            let price
+
+            switch(tradeDetails.action){
+                case 'buy':
+                    price = orderBook.bids[0].price
+                    break
+                case 'sell':
+                    price = orderBook.asks[0].price
+                    break
+            }
+
+            this.logger.info(`placing ${tradeDetails.action} trade on Gemini for ${tradeDetails.quantity} ethereum at $${price}/eth`)
         
             let orderParams = { 
                 client_order_id: "20150102-4738721", 
@@ -125,7 +138,7 @@ export default class GeminiService {
                 amount: tradeDetails.quantity,        
                 price: tradeDetails.rate,
                 side: tradeDetails.action,
-                type: 'exchange limit'
+                type: 'exchange limit',
             }
 
             let orderResults = await this.newOrder(orderParams)

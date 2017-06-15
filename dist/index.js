@@ -4,7 +4,7 @@ var _extends = Object.assign || function (target) { for (var i = 1; i < argument
 
 var main = function () {
   var _ref = _asyncToGenerator(regeneratorRuntime.mark(function _callee() {
-    var orderBookGemini, orderBookGdax, orderBooks, positionChange, results, gdaxResults, geminiResults, buyValue, sellValue, profit;
+    var orderBookGemini, orderBookGdax, orderBooks, positionChange, tradeResults, gdaxResults, geminiResults, buyValue, sellValue, profit;
     return regeneratorRuntime.wrap(function _callee$(_context) {
       while (1) {
         switch (_context.prev = _context.next) {
@@ -44,34 +44,34 @@ var main = function () {
 
           case 16:
             _context.next = 18;
-            return execute(positionChange);
+            return execute(positionChange, orderBooks);
 
           case 18:
-            results = _context.sent;
-            gdaxResults = results.gdax;
-            geminiResults = results.gemini;
+            tradeResults = _context.sent;
+            gdaxResults = tradeResults.gdax;
+            geminiResults = tradeResults.gemini;
             buyValue = void 0;
             sellValue = void 0;
-            _context.t0 = results.takeProfit;
+            _context.t0 = tradeResults.takeProfit;
             _context.next = _context.t0 === 'gdax' ? 26 : _context.t0 === 'gemini' ? 29 : 32;
             break;
 
           case 26:
-            buyValue = geminiResults.price * geminiResults.amount - geminiResults.fee;
-            sellValue = gdaxResults.price * gdaxResults.amount - gdaxResults.fee;
+            buyValue = tradeResults.gemini.price * tradeResults.gemini.amount - tradeResults.gemini.fee;
+            sellValue = tradeResults.gdax.price * tradeResults.gdax.amount - tradeResults.gdax.fee;
             return _context.abrupt('break', 32);
 
           case 29:
-            sellValue = geminiResults.price * geminiResults.amount - geminiResults.fee;
-            buyValue = gdaxResults.price * gdaxResults.amount - gdaxResults.fee;
+            sellValue = tradeResults.gemini.price * tradeResults.gemini.amount - tradeResults.gemini.fee;
+            buyValue = tradeResults.gdax.price * tradeResults.gdax.amount - tradeResults.gdax.fee;
             return _context.abrupt('break', 32);
 
           case 32:
             profit = (sellValue - buyValue) / buyValue;
 
 
-            _logger2.default.info('successful ' + gdaxResults.action + ' on Gdax for ' + gdaxResults.amount + ' ethereum at $' + gdaxResults.price + '/eth, fee of ' + gdaxResults.fee);
-            _logger2.default.info('successful ' + geminiResults.action + ' on Gemini for ' + geminiResults.amount + ' ethereum at ' + geminiResults.price + '/eth, fee of ' + geminiResults.fee);
+            _logger2.default.info('successful ' + tradeResults.gdax.action + ' on Gdax for ' + tradeResults.gdax.amount + ' ethereum at $' + tradeResults.gdax.price + '/eth, fee of ' + tradeResults.gdax.fee);
+            _logger2.default.info('successful ' + tradeResults.gemini.action + ' on Gemini for ' + tradeResults.gemini.amount + ' ethereum at ' + tradeResults.gemini.price + '/eth, fee of ' + tradeResults.gemini.fee);
             _logger2.default.info('profit percentage: ' + profit);
 
             _context.next = 41;
@@ -254,17 +254,20 @@ var determinePositionChange = function () {
 }();
 
 var execute = function () {
-  var _ref3 = _asyncToGenerator(regeneratorRuntime.mark(function _callee3(positionChange) {
+  var _ref3 = _asyncToGenerator(regeneratorRuntime.mark(function _callee3(positionChange, orderBooks) {
     var tradeResults, tradeLog;
     return regeneratorRuntime.wrap(function _callee3$(_context3) {
       while (1) {
         switch (_context3.prev = _context3.next) {
           case 0:
             _context3.next = 2;
-            return _bluebird2.default.all([gdaxService.executeTrade(positionChange.gdax), geminiService.executeTrade(positionChange.gemini)]);
+            return _bluebird2.default.all([gdaxService.executeTrade(positionChange.gdax, orderBooks.gdax), geminiService.executeTrade(positionChange.gemini, orderBooks.gemini)]);
 
           case 2:
             tradeResults = _context3.sent;
+
+            //let tradeResults = await Promise.all([gdaxService.executeTradeMakerOnly(positionChange.gdax, orderBooks.gdax)])
+
             tradeLog = {
               gdax: tradeResults[0],
               gemini: tradeResults[1],
@@ -280,7 +283,7 @@ var execute = function () {
     }, _callee3, this);
   }));
 
-  return function execute(_x2) {
+  return function execute(_x2, _x3) {
     return _ref3.apply(this, arguments);
   };
 }();
@@ -309,7 +312,7 @@ var determineCurrentEthereumPosition = function () {
 
             geminiEthBalance = parseFloat(geminiEthBalance[0].amount);
 
-            // determine gemini ethereum balance
+            // determine gdax ethereum balance
             _context4.next = 9;
             return gdaxService.availableBalances();
 
@@ -401,7 +404,7 @@ var _gemini = require('./services/gemini');
 
 var _gemini2 = _interopRequireDefault(_gemini);
 
-var _logger = require('./logger.js');
+var _logger = require('./services/logger.js');
 
 var _logger2 = _interopRequireDefault(_logger);
 
@@ -409,34 +412,8 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, arguments); return new _bluebird2.default(function (resolve, reject) { function step(key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { return _bluebird2.default.resolve(value).then(function (value) { step("next", value); }, function (err) { step("throw", err); }); } } return step("next"); }); }; }
 
-// const TIMESTAMP_FORMAT = 'HH:mm:ss.SSS'
-// const logDir = 'log';
-// const tsFormat = () => (new Date()).toLocaleTimeString();
-
-// if (!fs.existsSync(logDir)) {
-//   fs.mkdirSync(logDir);
-// }
-
-// const logger = new (winston.Logger)({
-//   transports: [
-//     new (winston.transports.Console)({
-//       timestamp: () => `[${moment.utc().format(TIMESTAMP_FORMAT)}]`,
-//       colorize: true,
-//       prettyPrint: true,
-//       level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
-//   }),
-//     new (winston.transports.File)({
-//       filename: `${logDir}/results.log`,
-//       timestamp: tsFormat,
-//       level: 'info'
-//     })
-//   ]
-// });
-
 var gdaxService = new _gdax2.default(_extends({}, _config2.default.gdax, { logger: _logger2.default }));
 var geminiService = new _gemini2.default(_extends({}, _config2.default.gemini, { logger: _logger2.default }));
-
-var aggregateProfit = 0;
 
 main();
 

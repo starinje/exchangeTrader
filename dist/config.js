@@ -16,9 +16,9 @@ module.exports = {
         usdAccountId: 'b878dae8-b114-4170-a5c7-a58446f1bf9a',
         ethAcountId: '74153015-34f2-444f-8093-2aae38f3d164'
     },
-    ethereumTradingQuantity: 1,
-    takeProfitTradeThreshold: .8,
-    swapFundsTradeThreshold: .8,
+    ethereumTradingQuantity: 3,
+    takeProfitTradeThreshold: .4,
+    swapFundsTradeThreshold: .2,
     timeDelta: 2000,
     transactionPercentageGemini: .3,
     transactionPercentageGdax: .3
