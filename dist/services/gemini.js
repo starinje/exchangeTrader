@@ -22,6 +22,10 @@ var _bluebird = require('bluebird');
 
 var _bluebird2 = _interopRequireDefault(_bluebird);
 
+var _moment = require('moment');
+
+var _moment2 = _interopRequireDefault(_moment);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, arguments); return new _bluebird2.default(function (resolve, reject) { function step(key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { return _bluebird2.default.resolve(value).then(function (value) { step("next", value); }, function (err) { step("throw", err); }); } } return step("next"); }); }; }
@@ -185,7 +189,7 @@ var GeminiService = function GeminiService(options) {
         }, _callee3, _this, [[0, 10]]);
     }));
 
-    this.executeTrade = function () {
+    this.executeTradeWorking = function () {
         var _ref5 = _asyncToGenerator(regeneratorRuntime.mark(function _callee4(tradeDetails, orderBook) {
             var price, orderParams, orderResults, tradeCompleted, tradeStatus, tradeSummary;
             return regeneratorRuntime.wrap(function _callee4$(_context4) {
@@ -206,11 +210,11 @@ var GeminiService = function GeminiService(options) {
                             break;
 
                         case 9:
-                            price = orderBook.bids[0].price;
+                            price = orderBook.bids[1].price;
                             return _context4.abrupt('break', 13);
 
                         case 11:
-                            price = orderBook.asks[0].price;
+                            price = orderBook.asks[1].price;
                             return _context4.abrupt('break', 13);
 
                         case 13:
@@ -280,60 +284,274 @@ var GeminiService = function GeminiService(options) {
         };
     }();
 
-    this.newOrder = function () {
-        var _ref6 = _asyncToGenerator(regeneratorRuntime.mark(function _callee5() {
-            var params = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+    this.executeTrade = function () {
+        var _ref6 = _asyncToGenerator(regeneratorRuntime.mark(function _callee5(positionChange) {
+            var tradeDetails, counterPrice, rateDelta, tradeCompleted, tradeProfitable, finalOrderResults, price, orderBook, lowestSellPrice, highestBuyPrice, orderParams, orderResults, timeStart, timeExpired, now, timeSinceTradePlaced, tradeStatus, tradeSummary;
             return regeneratorRuntime.wrap(function _callee5$(_context5) {
                 while (1) {
                     switch (_context5.prev = _context5.next) {
                         case 0:
                             _context5.prev = 0;
-                            _context5.next = 3;
-                            return _this.requestPrivate('/order/new', _extends({
-                                client_order_id: (0, _shortid2.default)(),
-                                type: 'exchange limit'
-                            }, params));
+                            tradeDetails = positionChange.gemini;
+                            counterPrice = positionChange.gdax.rate;
+                            rateDelta = Math.abs(positionChange.gdax.rate - positionChange.gemini.rate);
+                            tradeCompleted = false;
+                            tradeProfitable = true;
+                            finalOrderResults = void 0;
+                            price = void 0;
 
-                        case 3:
-                            return _context5.abrupt('return', _context5.sent);
+                        case 8:
+                            if (!(!tradeCompleted && tradeProfitable)) {
+                                _context5.next = 58;
+                                break;
+                            }
 
-                        case 6:
-                            _context5.prev = 6;
-                            _context5.t0 = _context5['catch'](0);
-                            return _context5.abrupt('return', _bluebird2.default.reject('gemini newOrder |> ' + _context5.t0));
+                            _context5.next = 11;
+                            return _this.getOrderBook();
 
-                        case 9:
+                        case 11:
+                            orderBook = _context5.sent;
+                            _context5.t0 = tradeDetails.action;
+                            _context5.next = _context5.t0 === 'buy' ? 15 : _context5.t0 === 'sell' ? 21 : 27;
+                            break;
+
+                        case 15:
+                            //price = orderBook.bids[0].price
+                            lowestSellPrice = parseFloat(orderBook.asks[0].price);
+
+                            price = lowestSellPrice - .01;
+
+                            if (!(price >= counterPrice - rateDelta / 2)) {
+                                _context5.next = 20;
+                                break;
+                            }
+
+                            tradeProfitable = false;
+                            return _context5.abrupt('continue', 8);
+
+                        case 20:
+                            return _context5.abrupt('break', 27);
+
+                        case 21:
+                            highestBuyPrice = parseFloat(orderBook.bids[0].price);
+
+                            price = highestBuyPrice + .01;
+
+                            if (!(price <= counterPrice + rateDelta / 2)) {
+                                _context5.next = 26;
+                                break;
+                            }
+
+                            tradeProfitable = false;
+                            return _context5.abrupt('continue', 8);
+
+                        case 26:
+                            return _context5.abrupt('break', 27);
+
+                        case 27:
+
+                            _this.logger.info('placing ' + tradeDetails.action + ' trade on Gemini for ' + tradeDetails.quantity + ' ethereum at $' + price + '/eth');
+
+                            orderParams = {
+                                client_order_id: "20150102-4738721",
+                                symbol: 'ethusd',
+                                amount: tradeDetails.quantity,
+                                price: price,
+                                side: tradeDetails.action,
+                                type: 'exchange limit',
+                                options: ['maker-or-cancel']
+                            };
+                            _context5.next = 31;
+                            return _this.newOrder(orderParams);
+
+                        case 31:
+                            orderResults = _context5.sent;
+
+                            if (!orderResults.is_cancelled) {
+                                _context5.next = 34;
+                                break;
+                            }
+
+                            return _context5.abrupt('continue', 8);
+
+                        case 34:
+                            timeStart = _moment2.default.utc(new Date());
+                            timeExpired = false;
+
+
+                            _this.logger.info('order entered - going into check status loop...');
+
+                        case 37:
+                            if (!(!timeExpired && !tradeCompleted)) {
+                                _context5.next = 54;
+                                break;
+                            }
+
+                            _context5.next = 40;
+                            return _bluebird2.default.delay(1000);
+
+                        case 40:
+                            now = _moment2.default.utc(new Date());
+                            timeSinceTradePlaced = _moment2.default.duration(now.diff(timeStart));
+
+                            if (!(timeSinceTradePlaced.asMinutes() > _this.options.orderFillTime)) {
+                                _context5.next = 48;
+                                break;
+                            }
+
+                            _this.logger.info('time has expired trying to ' + tradeDetails.action + ' ' + tradeDetails.quantity + ' ethereum at ' + price + '/eth, canceling order');
+                            _context5.next = 46;
+                            return _this.cancelOrders();
+
+                        case 46:
+                            timeExpired = true;
+                            return _context5.abrupt('continue', 37);
+
+                        case 48:
+                            _context5.next = 50;
+                            return _this.orderStatus(orderResults.order_id);
+
+                        case 50:
+                            tradeStatus = _context5.sent;
+
+                            if (tradeStatus.executed_amount == tradeStatus.original_amount) {
+                                tradeCompleted = true;
+                                finalOrderResults = orderResults;
+                            }
+                            _context5.next = 37;
+                            break;
+
+                        case 54:
+                            _context5.next = 56;
+                            return _bluebird2.default.delay(1000);
+
+                        case 56:
+                            _context5.next = 8;
+                            break;
+
+                        case 58:
+                            tradeSummary = void 0;
+
+                            if (!tradeCompleted) {
+                                _context5.next = 66;
+                                break;
+                            }
+
+                            _context5.next = 62;
+                            return _this.orderHistory(finalOrderResults.order_id);
+
+                        case 62:
+                            tradeSummary = _context5.sent;
+                            return _context5.abrupt('return', _extends({}, tradeSummary, { action: tradeDetails.action }));
+
+                        case 66:
+                            if (!tradeProfitable) {
+                                _this.logger.info(tradeDetails.action + ' on gemini for ' + tradeDetails.quantity + ' ethereum at ' + price + '/eth was unsuccesful - order book no longer profitable');
+                                process.exit();
+                            }
+
+                        case 67:
+                            _context5.next = 73;
+                            break;
+
+                        case 69:
+                            _context5.prev = 69;
+                            _context5.t1 = _context5['catch'](0);
+
+                            console.log(_context5.t1);
+                            return _context5.abrupt('return');
+
+                        case 73:
                         case 'end':
                             return _context5.stop();
                     }
                 }
-            }, _callee5, _this, [[0, 6]]);
+            }, _callee5, _this, [[0, 69]]);
         }));
 
-        return function () {
+        return function (_x7) {
             return _ref6.apply(this, arguments);
         };
     }();
 
-    this.availableBalances = _asyncToGenerator(regeneratorRuntime.mark(function _callee6() {
-        return regeneratorRuntime.wrap(function _callee6$(_context6) {
+    this.newOrder = function () {
+        var _ref7 = _asyncToGenerator(regeneratorRuntime.mark(function _callee6() {
+            var params = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+            return regeneratorRuntime.wrap(function _callee6$(_context6) {
+                while (1) {
+                    switch (_context6.prev = _context6.next) {
+                        case 0:
+                            _context6.prev = 0;
+                            return _context6.abrupt('return', _this.requestPrivate('/order/new', _extends({
+                                client_order_id: (0, _shortid2.default)(),
+                                type: 'exchange limit'
+                            }, params)));
+
+                        case 4:
+                            _context6.prev = 4;
+                            _context6.t0 = _context6['catch'](0);
+                            return _context6.abrupt('return', _bluebird2.default.reject('gemini newOrder |> ' + _context6.t0));
+
+                        case 7:
+                        case 'end':
+                            return _context6.stop();
+                    }
+                }
+            }, _callee6, _this, [[0, 4]]);
+        }));
+
+        return function () {
+            return _ref7.apply(this, arguments);
+        };
+    }();
+
+    this.cancelOrders = function () {
+        var _ref8 = _asyncToGenerator(regeneratorRuntime.mark(function _callee7() {
+            var params = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+            return regeneratorRuntime.wrap(function _callee7$(_context7) {
+                while (1) {
+                    switch (_context7.prev = _context7.next) {
+                        case 0:
+                            _context7.prev = 0;
+                            return _context7.abrupt('return', _this.requestPrivate('/order/cancel/all'));
+
+                        case 4:
+                            _context7.prev = 4;
+                            _context7.t0 = _context7['catch'](0);
+                            return _context7.abrupt('return', _bluebird2.default.reject('gemini cancelOrders |> ' + _context7.t0));
+
+                        case 7:
+                        case 'end':
+                            return _context7.stop();
+                    }
+                }
+            }, _callee7, _this, [[0, 4]]);
+        }));
+
+        return function () {
+            return _ref8.apply(this, arguments);
+        };
+    }();
+
+    this.availableBalances = _asyncToGenerator(regeneratorRuntime.mark(function _callee8() {
+        return regeneratorRuntime.wrap(function _callee8$(_context8) {
             while (1) {
-                switch (_context6.prev = _context6.next) {
+                switch (_context8.prev = _context8.next) {
                     case 0:
-                        _context6.prev = 0;
-                        return _context6.abrupt('return', _this.requestPrivate('/balances'));
+                        _context8.prev = 0;
+                        return _context8.abrupt('return', _this.requestPrivate('/balances'));
 
                     case 4:
-                        _context6.prev = 4;
-                        _context6.t0 = _context6['catch'](0);
-                        return _context6.abrupt('return', _bluebird2.default.reject('gemini availableBalances |> ' + _context6.t0));
+                        _context8.prev = 4;
+                        _context8.t0 = _context8['catch'](0);
+                        return _context8.abrupt('return', _bluebird2.default.reject('gemini availableBalances |> ' + _context8.t0));
 
                     case 7:
                     case 'end':
-                        return _context6.stop();
+                        return _context8.stop();
                 }
             }
-        }, _callee6, _this, [[0, 4]]);
+        }, _callee8, _this, [[0, 4]]);
     }));
 
     this.orderStatus = function (orderId) {
@@ -345,18 +563,18 @@ var GeminiService = function GeminiService(options) {
     };
 
     this.orderHistory = function () {
-        var _ref8 = _asyncToGenerator(regeneratorRuntime.mark(function _callee7(orderId) {
+        var _ref10 = _asyncToGenerator(regeneratorRuntime.mark(function _callee9(orderId) {
             var trades, orderTrades, fee, amount, price, numberOfTrades, averagePrice, tradeSummary;
-            return regeneratorRuntime.wrap(function _callee7$(_context7) {
+            return regeneratorRuntime.wrap(function _callee9$(_context9) {
                 while (1) {
-                    switch (_context7.prev = _context7.next) {
+                    switch (_context9.prev = _context9.next) {
                         case 0:
-                            _context7.prev = 0;
-                            _context7.next = 3;
+                            _context9.prev = 0;
+                            _context9.next = 3;
                             return _this.requestPrivate('/mytrades', { symbol: 'ETHUSD' });
 
                         case 3:
-                            trades = _context7.sent;
+                            trades = _context9.sent;
                             orderTrades = trades.filter(function (trade) {
                                 return trade.order_id == orderId;
                             });
@@ -379,23 +597,23 @@ var GeminiService = function GeminiService(options) {
                                 amount: amount,
                                 price: averagePrice
                             };
-                            return _context7.abrupt('return', tradeSummary);
+                            return _context9.abrupt('return', tradeSummary);
 
                         case 15:
-                            _context7.prev = 15;
-                            _context7.t0 = _context7['catch'](0);
-                            return _context7.abrupt('return', _bluebird2.default.reject('gemini orderStatus |> ' + _context7.t0));
+                            _context9.prev = 15;
+                            _context9.t0 = _context9['catch'](0);
+                            return _context9.abrupt('return', _bluebird2.default.reject('gemini orderStatus |> ' + _context9.t0));
 
                         case 18:
                         case 'end':
-                            return _context7.stop();
+                            return _context9.stop();
                     }
                 }
-            }, _callee7, _this, [[0, 15]]);
+            }, _callee9, _this, [[0, 15]]);
         }));
 
-        return function (_x8) {
-            return _ref8.apply(this, arguments);
+        return function (_x10) {
+            return _ref10.apply(this, arguments);
         };
     }();
 

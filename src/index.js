@@ -40,10 +40,12 @@ async function main(){
       return 
     }
     
-    let tradeResults = await execute(positionChange, orderBooks)
+    let tradeResults = await execute(positionChange)
 
     let gdaxResults = tradeResults.gdax
     let geminiResults = tradeResults.gemini
+
+    //check here for results from each exchage. If either is bad then process.exit and cancel all orders on both exchanges.
 
     let buyValue
     let sellValue
@@ -68,6 +70,7 @@ async function main(){
     
   } catch(err){
     logger.info(`error: ${err}`)
+    process.exit()
   } finally{
     await Promise.delay(config.timeDelta)
     main()
@@ -182,10 +185,10 @@ async function determinePositionChange(orderBooks){
   }
 }
 
-async function execute(positionChange, orderBooks){
+async function execute(positionChange){
 
-  let tradeResults = await Promise.all([gdaxService.executeTrade(positionChange.gdax, orderBooks.gdax), geminiService.executeTrade(positionChange.gemini, orderBooks.gemini)])
-  //let tradeResults = await Promise.all([gdaxService.executeTradeMakerOnly(positionChange.gdax, orderBooks.gdax)])
+  //let tradeResults = await Promise.all([gdaxService.executeTrade(positionChange), geminiService.executeTrade(positionChange)])
+  let tradeResults = await Promise.all([geminiService.executeTrade(positionChange)])
 
   let tradeLog = {
     gdax: tradeResults[0],
@@ -197,6 +200,8 @@ async function execute(positionChange, orderBooks){
 }
 
 async function determineCurrentEthereumPosition(){
+
+  return 'gdax'
 
   // determine gemini ethereum balance
   let currentGeminiBalances = await geminiService.availableBalances()

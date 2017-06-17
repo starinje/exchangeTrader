@@ -44,12 +44,15 @@ var main = function () {
 
           case 16:
             _context.next = 18;
-            return execute(positionChange, orderBooks);
+            return execute(positionChange);
 
           case 18:
             tradeResults = _context.sent;
             gdaxResults = tradeResults.gdax;
             geminiResults = tradeResults.gemini;
+
+            //check here for results from each exchage. If either is bad then process.exit and cancel all orders on both exchanges.
+
             buyValue = void 0;
             sellValue = void 0;
             _context.t0 = tradeResults.takeProfit;
@@ -74,7 +77,7 @@ var main = function () {
             _logger2.default.info('successful ' + tradeResults.gemini.action + ' on Gemini for ' + tradeResults.gemini.amount + ' ethereum at ' + tradeResults.gemini.price + '/eth, fee of ' + tradeResults.gemini.fee);
             _logger2.default.info('profit percentage: ' + profit);
 
-            _context.next = 41;
+            _context.next = 42;
             break;
 
           case 38:
@@ -82,22 +85,23 @@ var main = function () {
             _context.t1 = _context['catch'](0);
 
             _logger2.default.info('error: ' + _context.t1);
+            process.exit();
 
-          case 41:
-            _context.prev = 41;
-            _context.next = 44;
+          case 42:
+            _context.prev = 42;
+            _context.next = 45;
             return _bluebird2.default.delay(_config2.default.timeDelta);
 
-          case 44:
+          case 45:
             main();
-            return _context.finish(41);
+            return _context.finish(42);
 
-          case 46:
+          case 47:
           case 'end':
             return _context.stop();
         }
       }
-    }, _callee, this, [[0, 38, 41, 46]]);
+    }, _callee, this, [[0, 38, 42, 47]]);
   }));
 
   return function main() {
@@ -254,20 +258,17 @@ var determinePositionChange = function () {
 }();
 
 var execute = function () {
-  var _ref3 = _asyncToGenerator(regeneratorRuntime.mark(function _callee3(positionChange, orderBooks) {
+  var _ref3 = _asyncToGenerator(regeneratorRuntime.mark(function _callee3(positionChange) {
     var tradeResults, tradeLog;
     return regeneratorRuntime.wrap(function _callee3$(_context3) {
       while (1) {
         switch (_context3.prev = _context3.next) {
           case 0:
             _context3.next = 2;
-            return _bluebird2.default.all([gdaxService.executeTrade(positionChange.gdax, orderBooks.gdax), geminiService.executeTrade(positionChange.gemini, orderBooks.gemini)]);
+            return _bluebird2.default.all([geminiService.executeTrade(positionChange)]);
 
           case 2:
             tradeResults = _context3.sent;
-
-            //let tradeResults = await Promise.all([gdaxService.executeTradeMakerOnly(positionChange.gdax, orderBooks.gdax)])
-
             tradeLog = {
               gdax: tradeResults[0],
               gemini: tradeResults[1],
@@ -283,7 +284,7 @@ var execute = function () {
     }, _callee3, this);
   }));
 
-  return function execute(_x2, _x3) {
+  return function execute(_x2) {
     return _ref3.apply(this, arguments);
   };
 }();
@@ -295,10 +296,9 @@ var determineCurrentEthereumPosition = function () {
       while (1) {
         switch (_context4.prev = _context4.next) {
           case 0:
-            _context4.next = 2;
-            return geminiService.availableBalances();
+            return _context4.abrupt('return', 'gdax');
 
-          case 2:
+          case 3:
             currentGeminiBalances = _context4.sent;
             geminiUsdBalance = currentGeminiBalances.filter(function (accountDetails) {
               return accountDetails.currency == 'USD';
@@ -313,10 +313,10 @@ var determineCurrentEthereumPosition = function () {
             geminiEthBalance = parseFloat(geminiEthBalance[0].amount);
 
             // determine gdax ethereum balance
-            _context4.next = 9;
+            _context4.next = 10;
             return gdaxService.availableBalances();
 
-          case 9:
+          case 10:
             currentGdaxBalances = _context4.sent;
             gdaxUsdBalance = currentGdaxBalances.filter(function (accountDetails) {
               return accountDetails.currency == 'USD';
@@ -347,7 +347,7 @@ var determineCurrentEthereumPosition = function () {
 
             return _context4.abrupt('return', ethereumBalance);
 
-          case 22:
+          case 23:
           case 'end':
             return _context4.stop();
         }

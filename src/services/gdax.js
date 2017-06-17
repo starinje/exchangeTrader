@@ -76,10 +76,10 @@ export default class GdaxService {
 
             switch(tradeDetails.action){
                 case 'buy':
-                    price = orderBook.bids[2].price
+                    price = orderBook.bids[1].price
                     break
                 case 'sell':
-                    price = orderBook.asks[2].price
+                    price = orderBook.asks[1].price
                     break
             }
 
@@ -124,50 +124,50 @@ export default class GdaxService {
        
     }
 
-    executeTradeOld = async (tradeDetails, orderBook) => {
-        try{
-            this.logger.info(`placing ${tradeDetails.action} trade on Gdax for ${tradeDetails.quantity} ethereum at $${tradeDetails.rate}/eth`)
+    // executeTradeOld = async (tradeDetails, orderBook) => {
+    //     try{
+    //         this.logger.info(`placing ${tradeDetails.action} trade on Gdax for ${tradeDetails.quantity} ethereum at $${tradeDetails.rate}/eth`)
 
-            //should pass in profitable price range
-            //logic here to sweep across the price range attempting to place maker only orders
-            //if it cant then just place market order
+    //         //should pass in profitable price range
+    //         //logic here to sweep across the price range attempting to place maker only orders
+    //         //if it cant then just place market order
         
-            let orderParams = { 
-                productId: 'ETH-USD',       
-                size: tradeDetails.quantity,        
-                price: tradeDetails.rate,
-                action: tradeDetails.action
-            }
+    //         let orderParams = { 
+    //             productId: 'ETH-USD',       
+    //             size: tradeDetails.quantity,        
+    //             price: tradeDetails.rate,
+    //             action: tradeDetails.action
+    //         }
 
-            let orderResults = await this.newOrder(orderParams)
-            orderResults = JSON.parse(orderResults.body)
+    //         let orderResults = await this.newOrder(orderParams)
+    //         orderResults = JSON.parse(orderResults.body)
 
-            let tradeCompleted = false
-            let tradeCompletedDetails
+    //         let tradeCompleted = false
+    //         let tradeCompletedDetails
 
-            while(!tradeCompleted){
-                let tradeStatus = await this.orderStatus(orderResults.id)
-                if(tradeStatus.status == 'done'){
-                    tradeCompleted = true
-                    tradeCompletedDetails = tradeStatus
-                }
-                await Promise.delay(1000)
-            }
+    //         while(!tradeCompleted){
+    //             let tradeStatus = await this.orderStatus(orderResults.id)
+    //             if(tradeStatus.status == 'done'){
+    //                 tradeCompleted = true
+    //                 tradeCompletedDetails = tradeStatus
+    //             }
+    //             await Promise.delay(1000)
+    //         }
 
-            let tradeSummary = {
-                fee: parseFloat(tradeCompletedDetails.fill_fees),
-                amount: parseFloat(tradeCompletedDetails.size),
-                price: parseFloat(tradeCompletedDetails.price),
-                action: tradeDetails.action
-            }
+    //         let tradeSummary = {
+    //             fee: parseFloat(tradeCompletedDetails.fill_fees),
+    //             amount: parseFloat(tradeCompletedDetails.size),
+    //             price: parseFloat(tradeCompletedDetails.price),
+    //             action: tradeDetails.action
+    //         }
 
-            return tradeSummary
+    //         return tradeSummary
 
-        } catch(err){
-            return Promise.reject(`gdax executeTrade |> ${err}`)
-        } 
+    //     } catch(err){
+    //         return Promise.reject(`gdax executeTrade |> ${err}`)
+    //     } 
        
-    }
+    // }
 
     newOrder = async (params = {}) => {
         try {
