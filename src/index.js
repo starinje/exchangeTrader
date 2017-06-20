@@ -70,6 +70,8 @@ async function main(){
     
   } catch(err){
     logger.info(`error: ${err}`)
+    geminiService.cancelOrders()
+    gdaxService.cancelOrders()
     process.exit()
   } finally{
     await Promise.delay(config.timeDelta)
@@ -142,7 +144,7 @@ async function determinePositionChange(orderBooks){
       }
     }
   } else if (geminiRateIsSwappable) {
-    logger.info('Gemini Rate Is Swappable')
+    logger.info('Gemini rate is higher and profitable')
 
     let totalSaleValue = bidPriceGemini*ethereumTradingQuantity
     let totalPurchaseCost = askPriceGdax*ethereumTradingQuantity
@@ -177,7 +179,7 @@ async function determinePositionChange(orderBooks){
   }
 
   let exchangeWithEthereumBalance = await determineCurrentEthereumPosition()
-  
+
   if(positionChange[exchangeWithEthereumBalance].action == 'sell'){
     return positionChange
   } else {
@@ -187,8 +189,8 @@ async function determinePositionChange(orderBooks){
 
 async function execute(positionChange){
 
-  //let tradeResults = await Promise.all([gdaxService.executeTrade(positionChange), geminiService.executeTrade(positionChange)])
-  let tradeResults = await Promise.all([geminiService.executeTrade(positionChange)])
+  let tradeResults = await Promise.all([gdaxService.executeTrade(positionChange), geminiService.executeTrade(positionChange)])
+  //let tradeResults = await Promise.all([gdaxService.executeTrade(positionChange)])
 
   let tradeLog = {
     gdax: tradeResults[0],
@@ -200,8 +202,6 @@ async function execute(positionChange){
 }
 
 async function determineCurrentEthereumPosition(){
-
-  return 'gdax'
 
   // determine gemini ethereum balance
   let currentGeminiBalances = await geminiService.availableBalances()
@@ -240,18 +240,20 @@ async function determineCurrentEthereumPosition(){
 
 function calculateBidPrice(bids, ethereumTradingQuantity){
 
-  let priceLevel = bids.find((bid) => {
-    return parseFloat(bid.amount) >= ethereumTradingQuantity
-  })
+  // let priceLevel = bids.find((bid) => {
+  //   return parseFloat(bid.amount) >= ethereumTradingQuantity
+  // })
+  let priceLevel = bids[0]
 
   return priceLevel ? parseFloat(priceLevel.price) : 'no match found'
 }
 
 function calculateAskPrice(asks, ethereumTradingQuantity){
 
-  let priceLevel = asks.find((ask) => {
-    return parseFloat(ask.amount) >= ethereumTradingQuantity
-  })
+  // let priceLevel = asks.find((ask) => {
+  //   return parseFloat(ask.amount) >= ethereumTradingQuantity
+  // })
+  let priceLevel = asks[0]
 
   return priceLevel ? parseFloat(priceLevel.price) : 'no match found'
 }

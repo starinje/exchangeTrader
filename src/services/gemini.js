@@ -116,7 +116,7 @@ export default class GeminiService {
 
     }
 
-    executeTradeWorking = async (tradeDetails, orderBook) => {
+    executeTradeOld = async (tradeDetails, orderBook) => {
         try{
             orderBook = await this.getOrderBook()
             this.logger.info('retrieving latest order book from gemini')
@@ -175,69 +175,91 @@ export default class GeminiService {
 
             let finalOrderResults
             let price
+            let tradeQuantity = tradeDetails.quantity
 
             while(!tradeCompleted && tradeProfitable){
+
+                
 
                 let orderBook = await this.getOrderBook()
                 
                 switch(tradeDetails.action){
                 case 'buy':
-                    let lowestSellPrice = parseFloat(orderBook.asks[0].price)
-                    price = lowestSellPrice - .01
-                    if(price >= counterPrice-(rateDelta/2)){
+                    // let lowestSellPrice = parseFloat(orderBook.asks[0].price)
+                    // price = lowestSellPrice - .01
+                    let highestBuyPrice = parseFloat(orderBook.bids[0].price)
+                    price = highestBuyPrice 
+                    if(price >= counterPrice){ //-(rateDelta/2)
                         tradeProfitable = false
                         continue
                     }
                     break
                 case 'sell':
-                    let highestBuyPrice = parseFloat(orderBook.bids[0].price)
-                    price = highestBuyPrice + .01
-                    if(price <= counterPrice+(rateDelta/2)){
+                    // let highestBuyPrice = parseFloat(orderBook.bids[0].price)
+                    // price = highestBuyPrice + .01
+                    let lowestSellPrice = parseFloat(orderBook.asks[0].price)
+                    price = lowestSellPrice
+                    if(price <= counterPrice){ //+(rateDelta/2)
                         tradeProfitable = false
                         continue
                     }
                     break
                 }
+
+                price = price.toFixed(2).toString()
 
                 this.logger.info(`placing ${tradeDetails.action} trade on Gemini for ${tradeDetails.quantity} ethereum at $${price}/eth`)
             
                 let orderParams = { 
                     client_order_id: "20150102-4738721", 
                     symbol: 'ethusd',       
-                    amount: tradeDetails.quantity,        
+                    amount: tradeQuantity,        
                     price: price,
                     side: tradeDetails.action,
                     type: 'exchange limit',
                     options: ['maker-or-cancel']
                 }
 
+                if(parseFloat(orderParams.price) < 320){
+                    logger.info(`failed gemini price sanity check. price: ${orderParams.price} `)
+                    process.exit()
+                }
+
                 let orderResults = await this.newOrder(orderParams)
+                console.log(`gemini order results: ${JSON.stringify(orderResults)}`)
 
                 if(orderResults.is_cancelled){
+                    this.logger.info('gemini order could not be submitted')
+                    this.logger.info(orderResults)
                     continue
                 }
+
+                await Promise.delay(1000)
 
                 let timeStart = moment.utc(new Date())
                 let timeExpired = false
 
-                this.logger.info(`order entered - going into check status loop...`)
+                this.logger.info(`gemini order entered - going into check status loop...`)
                 while(!timeExpired && !tradeCompleted){
                     await Promise.delay(1000)
                     let now = moment.utc(new Date())
                     let timeSinceTradePlaced = moment.duration(now.diff(timeStart))
-                    if(timeSinceTradePlaced.asMinutes() > this.options.orderFillTime){
-                        this.logger.info(`time has expired trying to ${tradeDetails.action} ${tradeDetails.quantity} ethereum at ${price}/eth, canceling order`)
-                        await this.cancelOrders()
-                        timeExpired = true
-                        continue
-                    }
+
                     let tradeStatus = await this.orderStatus(orderResults.order_id)
                     if(tradeStatus.executed_amount == tradeStatus.original_amount){
                         tradeCompleted = true
                         finalOrderResults = orderResults
+                        continue
+                    } else {
+                        tradeQuantity = parseFloat(tradeStatus.original_amount) - parseFloat(tradeStatus.executed_amount)
+                    }
+
+                    if(timeSinceTradePlaced.asMinutes() > this.options.orderFillTime){
+                        this.logger.info(`time has expired trying to ${tradeDetails.action} ${tradeDetails.quantity} ethereum on gemini at ${price}/eth, canceling order`)
+                        await this.cancelOrders()
+                        timeExpired = true
                     }
                 }
-                await Promise.delay(1000)
             }
 
             let tradeSummary
@@ -250,9 +272,9 @@ export default class GeminiService {
                 process.exit()
             }
         } catch(err){
-            console.log(err)
-            return
-            //return Promise.reject(`gemini executeTrade |> ${err}`)
+            //this.logger.info(`gemini executeTrade |> ${err}`)
+            //return
+            return Promise.reject(`gemini executeTrade |> ${err}`)
         }
     }
 
@@ -323,6 +345,7 @@ export default class GeminiService {
 
             return tradeSummary
         } catch(err){
+            this.logger.info(`gemini orderStatus |> ${err}`)
             return Promise.reject(`gemini orderStatus |> ${err}`)
         }
     }

@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import shortid from 'shortid';
 import Promise from 'bluebird'
 import Gdax from 'gdax'
+import moment from 'moment'
 
 export default class GdaxService {
     constructor(options){
@@ -58,73 +59,189 @@ export default class GdaxService {
       
     }
 
-    executeTrade = async (tradeDetails, orderBook) => {
+    executeTrade = async (positionChange) => {
         try{
-            //this.logger.info(`placing ${tradeDetails.action} trade on Gdax for ${tradeDetails.quantity} ethereum at $${tradeDetails.rate}/eth`)
 
-            // here we have the desired buy/sell level
-            // need to place a maker-or-cancel order
-            // switch on action (buy/sell)
-            // generate array of available priceLevels 
-            // if trying to sell, place maker-only sell in the spread lower than the current 
-            //logic here to sweep across the price range attempting to place maker only orders
-            //if it cant then just place market order
-
-            orderBook = await this.getOrderBook()
-            this.logger.info('retrieving latest order book from gdax')
-            let price
-
-            switch(tradeDetails.action){
-                case 'buy':
-                    price = orderBook.bids[1].price
-                    break
-                case 'sell':
-                    price = orderBook.asks[1].price
-                    break
-            }
-
-            this.logger.info(`placing ${tradeDetails.action} trade on Gdax for ${tradeDetails.quantity} ethereum at $${price}/eth`)
-        
-            let orderParams = { 
-                productId: 'ETH-USD',       
-                size: tradeDetails.quantity,        
-                price: price,
-                action: tradeDetails.action,
-                postOnly: true
-            }
-
-            let orderResults = await this.newOrder(orderParams)
-            orderResults = JSON.parse(orderResults.body)
+            const tradeDetails = positionChange.gdax
+            const counterPrice = positionChange.gemini.rate
+            const rateDelta = Math.abs(positionChange.gdax.rate - positionChange.gemini.rate)
 
             let tradeCompleted = false
-            let tradeCompletedDetails
+            let tradeProfitable = true
 
-            while(!tradeCompleted){
-                let tradeStatus = await this.orderStatus(orderResults.id)
-                if(tradeStatus.status == 'done'){
-                    tradeCompleted = true
-                    tradeCompletedDetails = tradeStatus
+            let finalOrderResults
+            let price
+            let tradeQuantity = tradeDetails.quantity
+
+            while(!tradeCompleted && tradeProfitable){
+
+                let orderBook = await this.getOrderBook()
+                
+                switch(tradeDetails.action){
+                case 'buy':
+                    // let lowestSellPrice = parseFloat(orderBook.asks[0].price)
+                    // price = lowestSellPrice - .01
+                    let highestBuyPrice = parseFloat(orderBook.bids[0].price)
+                    price = highestBuyPrice 
+                    if(price >= counterPrice){ //-(rateDelta/2)
+                        tradeProfitable = false
+                        continue
+                    }
+                    break
+                case 'sell':
+                   // let highestBuyPrice = parseFloat(orderBook.bids[0].price)
+                    // price = highestBuyPrice + .01
+                    let lowestSellPrice = parseFloat(orderBook.asks[0].price)
+                    price = lowestSellPrice
+                    if(price <= counterPrice){ //+(rateDelta/2)
+                        tradeProfitable = false
+                        continue
+                    }
+                    break
                 }
+
+                price = price.toFixed(2).toString()
+
+                this.logger.info(`placing ${tradeDetails.action} trade on Gdax for ${tradeDetails.quantity} ethereum at $${price}/eth`)
+
+                let orderParams = { 
+                    productId: 'ETH-USD',       
+                    size: tradeQuantity,        
+                    price: price,
+                    action: tradeDetails.action,
+                    postOnly: true
+                }
+
+                if(parseFloat(orderParams.price) < 320){
+                    logger.info(`failed gdax price sanity check. price: ${orderParams.price} `)
+                    process.exit()
+                }
+
+                let orderResults = await this.newOrder(orderParams)
+                orderResults = JSON.parse(orderResults.body)
+                console.log(`gdax order results: ${JSON.stringify(orderResults)}`)
+
+                //TODO - need to check for order sucess - not for order failure....
+
+                if(!(orderResults.hasOwnProperty('status')) || !(orderResults.status == 'pending')){
+                    this.logger.info('gdax order could not be submitted')
+                    this.logger.info(orderResults)
+                    continue
+                }
+
                 await Promise.delay(1000)
+
+                let timeStart = moment.utc(new Date())
+                let timeExpired = false
+
+                this.logger.info(`gdax order entered - going into check status loop...`)
+                while(!timeExpired && !tradeCompleted){
+                    await Promise.delay(1000)
+                    let now = moment.utc(new Date())
+                    let timeSinceTradePlaced = moment.duration(now.diff(timeStart))
+
+                    let tradeStatus = await this.orderStatus(orderResults.order_id)
+                    if(tradeStatus.executed_amount == tradeStatus.original_amount){
+                        tradeCompleted = true
+                        finalOrderResults = orderResults
+                        continue
+                    } else {
+                        tradeQuantity = parseFloat(tradeStatus.original_amount) - parseFloat(tradeStatus.executed_amount)
+                    }
+
+                    if(timeSinceTradePlaced.asMinutes() > this.options.orderFillTime){
+                        this.logger.info(`time has expired trying to ${tradeDetails.action} ${tradeDetails.quantity} ethereum on gdax at ${price}/eth, canceling order`)
+                        await this.cancelOrders()
+                        timeExpired = true
+                    }
+                }
             }
 
-            let tradeSummary = {
-                fee: parseFloat(tradeCompletedDetails.fill_fees),
-                amount: parseFloat(tradeCompletedDetails.size),
-                price: parseFloat(tradeCompletedDetails.price),
-                action: tradeDetails.action
+            let tradeSummary
+
+            if(tradeCompleted){
+
+                let tradeSummary = {
+                    fee: parseFloat(finalOrderResults.fill_fees),
+                    amount: parseFloat(finalOrderResults.size),
+                    price: parseFloat(finalOrderResults.price),
+                }
+
+                return {...tradeSummary, action: tradeDetails.action}
+            } else if(!tradeProfitable){
+                this.logger.info(`${tradeDetails.action} on gdax for ${tradeDetails.quantity} ethereum at ${price}/eth was unsuccesful - order book no longer profitable`)
+                process.exit()
             }
-
-            return tradeSummary
-
-            return 
         } catch(err){
             return Promise.reject(`gdax executeTrade |> ${err}`)
-        } 
-       
+        }
     }
 
     // executeTradeOld = async (tradeDetails, orderBook) => {
+    //     try{
+    //         //this.logger.info(`placing ${tradeDetails.action} trade on Gdax for ${tradeDetails.quantity} ethereum at $${tradeDetails.rate}/eth`)
+
+    //         // here we have the desired buy/sell level
+    //         // need to place a maker-or-cancel order
+    //         // switch on action (buy/sell)
+    //         // generate array of available priceLevels 
+    //         // if trying to sell, place maker-only sell in the spread lower than the current 
+    //         //logic here to sweep across the price range attempting to place maker only orders
+    //         //if it cant then just place market order
+
+    //         orderBook = await this.getOrderBook()
+    //         this.logger.info('retrieving latest order book from gdax')
+    //         let price
+
+    //         switch(tradeDetails.action){
+    //             case 'buy':
+    //                 price = orderBook.bids[1].price
+    //                 break
+    //             case 'sell':
+    //                 price = orderBook.asks[1].price
+    //                 break
+    //         }
+
+    //         this.logger.info(`placing ${tradeDetails.action} trade on Gdax for ${tradeDetails.quantity} ethereum at $${price}/eth`)
+        
+    //         let orderParams = { 
+    //             productId: 'ETH-USD',       
+    //             size: tradeDetails.quantity,        
+    //             price: price,
+    //             action: tradeDetails.action,
+    //             postOnly: true
+    //         }
+
+    //         let orderResults = await this.newOrder(orderParams)
+    //         orderResults = JSON.parse(orderResults.body)
+
+    //         let tradeCompleted = false
+    //         let tradeCompletedDetails
+
+    //         while(!tradeCompleted){
+    //             let tradeStatus = await this.orderStatus(orderResults.id)
+    //             if(tradeStatus.status == 'done'){
+    //                 tradeCompleted = true
+    //                 tradeCompletedDetails = tradeStatus
+    //             }
+    //             await Promise.delay(1000)
+    //         }
+
+    //         let tradeSummary = {
+    //             fee: parseFloat(tradeCompletedDetails.fill_fees),
+    //             amount: parseFloat(tradeCompletedDetails.size),
+    //             price: parseFloat(tradeCompletedDetails.price),
+    //             action: tradeDetails.action
+    //         }
+
+    //         return tradeSummary
+    //     } catch(err){
+    //         return Promise.reject(`gdax executeTrade |> ${err}`)
+    //     } 
+       
+    // }
+
+    // executeTradeOldest = async (tradeDetails, orderBook) => {
     //     try{
     //         this.logger.info(`placing ${tradeDetails.action} trade on Gdax for ${tradeDetails.quantity} ethereum at $${tradeDetails.rate}/eth`)
 
@@ -186,6 +303,19 @@ export default class GdaxService {
             })
         } catch(err){
             return Promise.reject(`gdax newOrder Error: ${err}`)
+            
+        }
+    }
+
+    cancelOrders = async () => {
+        try {
+            return new Promise((resolve, reject) => {
+                this.authedClient.cancelAllOrders( (err, results, data) => {
+                    return resolve(results)
+                })
+            })
+        } catch(err){
+            return Promise.reject(`gdax cancelOrders Error: ${err}`)
             
         }
     }

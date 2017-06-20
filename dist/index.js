@@ -77,7 +77,7 @@ var main = function () {
             _logger2.default.info('successful ' + tradeResults.gemini.action + ' on Gemini for ' + tradeResults.gemini.amount + ' ethereum at ' + tradeResults.gemini.price + '/eth, fee of ' + tradeResults.gemini.fee);
             _logger2.default.info('profit percentage: ' + profit);
 
-            _context.next = 42;
+            _context.next = 44;
             break;
 
           case 38:
@@ -85,23 +85,25 @@ var main = function () {
             _context.t1 = _context['catch'](0);
 
             _logger2.default.info('error: ' + _context.t1);
+            geminiService.cancelOrders();
+            gdaxService.cancelOrders();
             process.exit();
 
-          case 42:
-            _context.prev = 42;
-            _context.next = 45;
+          case 44:
+            _context.prev = 44;
+            _context.next = 47;
             return _bluebird2.default.delay(_config2.default.timeDelta);
 
-          case 45:
-            main();
-            return _context.finish(42);
-
           case 47:
+            main();
+            return _context.finish(44);
+
+          case 49:
           case 'end':
             return _context.stop();
         }
       }
-    }, _callee, this, [[0, 38, 42, 47]]);
+    }, _callee, this, [[0, 38, 44, 49]]);
   }));
 
   return function main() {
@@ -190,7 +192,7 @@ var determinePositionChange = function () {
               break;
             }
 
-            _logger2.default.info('Gemini Rate Is Swappable');
+            _logger2.default.info('Gemini rate is higher and profitable');
 
             _totalSaleValue = bidPriceGemini * ethereumTradingQuantity;
             _totalPurchaseCost = askPriceGdax * ethereumTradingQuantity;
@@ -265,10 +267,13 @@ var execute = function () {
         switch (_context3.prev = _context3.next) {
           case 0:
             _context3.next = 2;
-            return _bluebird2.default.all([geminiService.executeTrade(positionChange)]);
+            return _bluebird2.default.all([gdaxService.executeTrade(positionChange), geminiService.executeTrade(positionChange)]);
 
           case 2:
             tradeResults = _context3.sent;
+
+            //let tradeResults = await Promise.all([gdaxService.executeTrade(positionChange)])
+
             tradeLog = {
               gdax: tradeResults[0],
               gemini: tradeResults[1],
@@ -296,9 +301,10 @@ var determineCurrentEthereumPosition = function () {
       while (1) {
         switch (_context4.prev = _context4.next) {
           case 0:
-            return _context4.abrupt('return', 'gdax');
+            _context4.next = 2;
+            return geminiService.availableBalances();
 
-          case 3:
+          case 2:
             currentGeminiBalances = _context4.sent;
             geminiUsdBalance = currentGeminiBalances.filter(function (accountDetails) {
               return accountDetails.currency == 'USD';
@@ -313,10 +319,10 @@ var determineCurrentEthereumPosition = function () {
             geminiEthBalance = parseFloat(geminiEthBalance[0].amount);
 
             // determine gdax ethereum balance
-            _context4.next = 10;
+            _context4.next = 9;
             return gdaxService.availableBalances();
 
-          case 10:
+          case 9:
             currentGdaxBalances = _context4.sent;
             gdaxUsdBalance = currentGdaxBalances.filter(function (accountDetails) {
               return accountDetails.currency == 'USD';
@@ -347,7 +353,7 @@ var determineCurrentEthereumPosition = function () {
 
             return _context4.abrupt('return', ethereumBalance);
 
-          case 23:
+          case 22:
           case 'end':
             return _context4.stop();
         }
@@ -419,18 +425,20 @@ main();
 
 function calculateBidPrice(bids, ethereumTradingQuantity) {
 
-  var priceLevel = bids.find(function (bid) {
-    return parseFloat(bid.amount) >= ethereumTradingQuantity;
-  });
+  // let priceLevel = bids.find((bid) => {
+  //   return parseFloat(bid.amount) >= ethereumTradingQuantity
+  // })
+  var priceLevel = bids[0];
 
   return priceLevel ? parseFloat(priceLevel.price) : 'no match found';
 }
 
 function calculateAskPrice(asks, ethereumTradingQuantity) {
 
-  var priceLevel = asks.find(function (ask) {
-    return parseFloat(ask.amount) >= ethereumTradingQuantity;
-  });
+  // let priceLevel = asks.find((ask) => {
+  //   return parseFloat(ask.amount) >= ethereumTradingQuantity
+  // })
+  var priceLevel = asks[0];
 
   return priceLevel ? parseFloat(priceLevel.price) : 'no match found';
 }
