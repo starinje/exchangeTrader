@@ -81,8 +81,16 @@ export default class GdaxService {
                 case 'buy':
                     // let lowestSellPrice = parseFloat(orderBook.asks[0].price)
                     // price = lowestSellPrice - .01
-                    let highestBuyPrice = parseFloat(orderBook.bids[0].price)
-                    price = highestBuyPrice 
+                    // let highestBuyPrice = parseFloat(orderBook.bids[0].price)
+                    // price = highestBuyPrice 
+
+                    let lowestSellPriceLevel = orderBook.asks.find((ask) => {
+                        return parseFloat(ask.amount) >= tradeQuantity
+                    })
+
+                    price = parseFloat(lowestSellPriceLevel.price)
+                    console.log(`gdax buy price is: ${price}`)
+
                     if(price >= counterPrice){ //-(rateDelta/2)
                         tradeProfitable = false
                         continue
@@ -91,8 +99,16 @@ export default class GdaxService {
                 case 'sell':
                    // let highestBuyPrice = parseFloat(orderBook.bids[0].price)
                     // price = highestBuyPrice + .01
-                    let lowestSellPrice = parseFloat(orderBook.asks[0].price)
-                    price = lowestSellPrice
+                    // let lowestSellPrice = parseFloat(orderBook.asks[0].price)
+                    // price = lowestSellPrice
+
+                    let highestBuyPriceLevel = orderBook.bids.find((ask) => {
+                        return parseFloat(ask.amount) >= tradeQuantity
+                    })
+
+                    price = parseFloat(highestBuyPriceLevel.price)
+                    console.log(`gdax sell price is: ${price}`)
+
                     if(price <= counterPrice){ //+(rateDelta/2)
                         tradeProfitable = false
                         continue
@@ -109,11 +125,11 @@ export default class GdaxService {
                     size: tradeQuantity,        
                     price: price,
                     action: tradeDetails.action,
-                    postOnly: true
+                    //postOnly: true
                 }
 
-                if(parseFloat(orderParams.price) < 320){
-                    logger.info(`failed gdax price sanity check. price: ${orderParams.price} `)
+                if(parseFloat(orderParams.price) < 250){
+                    this.logger.info(`failed gdax price sanity check. price: ${orderParams.price} `)
                     process.exit()
                 }
 
@@ -140,13 +156,13 @@ export default class GdaxService {
                     let now = moment.utc(new Date())
                     let timeSinceTradePlaced = moment.duration(now.diff(timeStart))
 
-                    let tradeStatus = await this.orderStatus(orderResults.order_id)
-                    if(tradeStatus.executed_amount == tradeStatus.original_amount){
+                    let tradeStatus = await this.orderStatus(orderResults.id)
+                    if(tradeStatus.filled_size == tradeStatus.size){
                         tradeCompleted = true
                         finalOrderResults = orderResults
                         continue
                     } else {
-                        tradeQuantity = parseFloat(tradeStatus.original_amount) - parseFloat(tradeStatus.executed_amount)
+                        tradeQuantity = parseFloat(tradeStatus.size) - parseFloat(tradeStatus.filled_size)
                     }
 
                     if(timeSinceTradePlaced.asMinutes() > this.options.orderFillTime){

@@ -187,8 +187,17 @@ export default class GeminiService {
                 case 'buy':
                     // let lowestSellPrice = parseFloat(orderBook.asks[0].price)
                     // price = lowestSellPrice - .01
-                    let highestBuyPrice = parseFloat(orderBook.bids[0].price)
-                    price = highestBuyPrice 
+
+                    // let highestBuyPrice = parseFloat(orderBook.bids[0].price)
+                    // price = highestBuyPrice 
+
+                    let lowestSellPriceLevel = orderBook.asks.find((ask) => {
+                        return parseFloat(ask.amount) >= tradeQuantity
+                    })
+
+                    price = parseFloat(lowestSellPriceLevel.price)
+                    console.log(`gemini buy price is: ${price}`)
+
                     if(price >= counterPrice){ //-(rateDelta/2)
                         tradeProfitable = false
                         continue
@@ -197,8 +206,17 @@ export default class GeminiService {
                 case 'sell':
                     // let highestBuyPrice = parseFloat(orderBook.bids[0].price)
                     // price = highestBuyPrice + .01
-                    let lowestSellPrice = parseFloat(orderBook.asks[0].price)
-                    price = lowestSellPrice
+
+                    // let lowestSellPrice = parseFloat(orderBook.asks[0].price)
+                    // price = lowestSellPrice
+
+                    let highestBuyPriceLevel = orderBook.bids.find((ask) => {
+                        return parseFloat(ask.amount) >= tradeQuantity
+                    })
+
+                    price = parseFloat(highestBuyPriceLevel.price)
+                    console.log(`gemini sell price is: ${price}`)
+
                     if(price <= counterPrice){ //+(rateDelta/2)
                         tradeProfitable = false
                         continue
@@ -217,11 +235,11 @@ export default class GeminiService {
                     price: price,
                     side: tradeDetails.action,
                     type: 'exchange limit',
-                    options: ['maker-or-cancel']
+                    //options: ['maker-or-cancel']
                 }
 
-                if(parseFloat(orderParams.price) < 320){
-                    logger.info(`failed gemini price sanity check. price: ${orderParams.price} `)
+                if(parseFloat(orderParams.price) < 250){
+                    this.logger.info(`failed gemini price sanity check. price: ${orderParams.price} `)
                     process.exit()
                 }
 

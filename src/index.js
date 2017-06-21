@@ -86,6 +86,9 @@ async function determinePositionChange(orderBooks){
   const takeProfitTradeThreshold = config.takeProfitTradeThreshold
   const swapFundsTradeThreshold = config.swapFundsTradeThreshold
 
+  console.log(takeProfitTradeThreshold)
+  console.log(swapFundsTradeThreshold)
+
   let bidPriceGemini = calculateBidPrice(orderBooks.gemini.bids, ethereumTradingQuantity)
   let bidPriceGdax = calculateBidPrice(orderBooks.gdax.bids, ethereumTradingQuantity)
   let askPriceGemini = calculateAskPrice(orderBooks.gemini.asks, ethereumTradingQuantity)
@@ -240,20 +243,20 @@ async function determineCurrentEthereumPosition(){
 
 function calculateBidPrice(bids, ethereumTradingQuantity){
 
-  // let priceLevel = bids.find((bid) => {
-  //   return parseFloat(bid.amount) >= ethereumTradingQuantity
-  // })
-  let priceLevel = bids[0]
+  let priceLevel = bids.find((bid) => {
+    return parseFloat(bid.amount) >= ethereumTradingQuantity
+  })
+  //let priceLevel = bids[0]
 
   return priceLevel ? parseFloat(priceLevel.price) : 'no match found'
 }
 
 function calculateAskPrice(asks, ethereumTradingQuantity){
 
-  // let priceLevel = asks.find((ask) => {
-  //   return parseFloat(ask.amount) >= ethereumTradingQuantity
-  // })
-  let priceLevel = asks[0]
+  let priceLevel = asks.find((ask) => {
+    return parseFloat(ask.amount) >= ethereumTradingQuantity
+  })
+  //let priceLevel = asks[0]
 
   return priceLevel ? parseFloat(priceLevel.price) : 'no match found'
 }

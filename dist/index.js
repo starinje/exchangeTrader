@@ -122,6 +122,11 @@ var determinePositionChange = function () {
             ethereumTradingQuantity = _config2.default.ethereumTradingQuantity;
             takeProfitTradeThreshold = _config2.default.takeProfitTradeThreshold;
             swapFundsTradeThreshold = _config2.default.swapFundsTradeThreshold;
+
+
+            console.log(takeProfitTradeThreshold);
+            console.log(swapFundsTradeThreshold);
+
             bidPriceGemini = calculateBidPrice(orderBooks.gemini.bids, ethereumTradingQuantity);
             bidPriceGdax = calculateBidPrice(orderBooks.gdax.bids, ethereumTradingQuantity);
             askPriceGemini = calculateAskPrice(orderBooks.gemini.asks, ethereumTradingQuantity);
@@ -149,7 +154,7 @@ var determinePositionChange = function () {
             _logger2.default.info('geminiBasePercentageDifference: ' + geminiBasePercentageDifference);
 
             if (!gdaxRateIsHigherAndProfitable) {
-              _context2.next = 38;
+              _context2.next = 40;
               break;
             }
 
@@ -183,12 +188,12 @@ var determinePositionChange = function () {
                 rate: askPriceGemini
               }
             };
-            _context2.next = 55;
+            _context2.next = 57;
             break;
 
-          case 38:
+          case 40:
             if (!geminiRateIsSwappable) {
-              _context2.next = 53;
+              _context2.next = 55;
               break;
             }
 
@@ -222,31 +227,31 @@ var determinePositionChange = function () {
                 rate: askPriceGdax
               }
             };
-            _context2.next = 55;
+            _context2.next = 57;
             break;
 
-          case 53:
+          case 55:
             positionChange = 'none';
             return _context2.abrupt('return', positionChange);
 
-          case 55:
-            _context2.next = 57;
+          case 57:
+            _context2.next = 59;
             return determineCurrentEthereumPosition();
 
-          case 57:
+          case 59:
             exchangeWithEthereumBalance = _context2.sent;
 
             if (!(positionChange[exchangeWithEthereumBalance].action == 'sell')) {
-              _context2.next = 62;
+              _context2.next = 64;
               break;
             }
 
             return _context2.abrupt('return', positionChange);
 
-          case 62:
+          case 64:
             return _context2.abrupt('return', 'none');
 
-          case 63:
+          case 65:
           case 'end':
             return _context2.stop();
         }
@@ -425,20 +430,20 @@ main();
 
 function calculateBidPrice(bids, ethereumTradingQuantity) {
 
-  // let priceLevel = bids.find((bid) => {
-  //   return parseFloat(bid.amount) >= ethereumTradingQuantity
-  // })
-  var priceLevel = bids[0];
+  var priceLevel = bids.find(function (bid) {
+    return parseFloat(bid.amount) >= ethereumTradingQuantity;
+  });
+  //let priceLevel = bids[0]
 
   return priceLevel ? parseFloat(priceLevel.price) : 'no match found';
 }
 
 function calculateAskPrice(asks, ethereumTradingQuantity) {
 
-  // let priceLevel = asks.find((ask) => {
-  //   return parseFloat(ask.amount) >= ethereumTradingQuantity
-  // })
-  var priceLevel = asks[0];
+  var priceLevel = asks.find(function (ask) {
+    return parseFloat(ask.amount) >= ethereumTradingQuantity;
+  });
+  //let priceLevel = asks[0]
 
   return priceLevel ? parseFloat(priceLevel.price) : 'no match found';
 }
