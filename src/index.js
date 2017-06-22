@@ -34,6 +34,8 @@ async function main(){
       gemini: orderBookGemini
     }
 
+    //console.log(JSON.stringify(orderBooks))
+
     let positionChange = await determinePositionChange(orderBooks)
 
     if(positionChange == 'none'){

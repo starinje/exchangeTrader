@@ -5,7 +5,8 @@ module.exports = {
         url: 'https://api.gemini.com/v1',
         key: 'A2Vi33Da5ESehulxBYJD',
         secret: '4Xgj1U5HrxgHB7bvVeTjftBzN2nK',
-        sandbox: false
+        sandbox: false,
+        orderFillTime: 1
     },
     gdax: {
         url: 'https://api.gdax.com/products/ETH-USD/book?level=2',
@@ -14,14 +15,15 @@ module.exports = {
         secret: '0HrdzdopW5qnf74CgeErVN0HwwDcuYzs7M49cWcQ4FCAHY1TJuDQl48so7fvpa8Hwr6Co/+GhKeizMZsP8qZ8A==',
         passphrase: 'if61ndcnzod',
         usdAccountId: 'b878dae8-b114-4170-a5c7-a58446f1bf9a',
-        ethAcountId: '74153015-34f2-444f-8093-2aae38f3d164'
+        ethAcountId: '74153015-34f2-444f-8093-2aae38f3d164',
+        orderFillTime: 1
     },
-    ethereumTradingQuantity: 3,
-    takeProfitTradeThreshold: .4,
-    swapFundsTradeThreshold: .2,
+    ethereumTradingQuantity: 18,
+    takeProfitTradeThreshold: 1.3,
+    swapFundsTradeThreshold: .6,
     timeDelta: 2000,
-    transactionPercentageGemini: .3,
-    transactionPercentageGdax: .3
+    transactionPercentageGemini: .15,
+    transactionPercentageGdax: 0
 };
 
 // Gemini live account

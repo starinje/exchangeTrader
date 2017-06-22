@@ -205,7 +205,7 @@ var GdaxService = function GdaxService(options) {
                                                 };
 
 
-                                                if (parseFloat(orderParams.price) < 250) {
+                                                if (parseFloat(orderParams.price) < 250 || parseFloat(orderParams.price) > 400) {
                                                     _this.logger.info('failed gdax price sanity check. price: ' + orderParams.price + ' ');
                                                     process.exit();
                                                 }

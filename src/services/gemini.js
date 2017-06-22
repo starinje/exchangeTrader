@@ -238,7 +238,7 @@ export default class GeminiService {
                     //options: ['maker-or-cancel']
                 }
 
-                if(parseFloat(orderParams.price) < 250){
+                if(parseFloat(orderParams.price) < 250 || parseFloat(orderParams.price) > 400){
                     this.logger.info(`failed gemini price sanity check. price: ${orderParams.price} `)
                     process.exit()
                 }

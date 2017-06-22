@@ -29,6 +29,9 @@ var main = function () {
               gdax: orderBookGdax,
               gemini: orderBookGemini
             };
+
+            //console.log(JSON.stringify(orderBooks))
+
             _context.next = 13;
             return determinePositionChange(orderBooks);
 

@@ -128,7 +128,7 @@ export default class GdaxService {
                     //postOnly: true
                 }
 
-                if(parseFloat(orderParams.price) < 250){
+                if(parseFloat(orderParams.price) < 250 || parseFloat(orderParams.price) > 400){
                     this.logger.info(`failed gdax price sanity check. price: ${orderParams.price} `)
                     process.exit()
                 }

@@ -395,7 +395,7 @@ var GeminiService = function GeminiService(options) {
                                                 };
 
 
-                                                if (parseFloat(orderParams.price) < 250) {
+                                                if (parseFloat(orderParams.price) < 250 || parseFloat(orderParams.price) > 400) {
                                                     _this.logger.info('failed gemini price sanity check. price: ' + orderParams.price + ' ');
                                                     process.exit();
                                                 }
