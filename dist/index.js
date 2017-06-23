@@ -140,8 +140,17 @@ var determinePositionChange = function () {
             estimatedGrossProfit = void 0;
             estimatedNetProfit = void 0;
 
+
+            _heartbeatLogger2.default.info('bidPriceGemini: ' + bidPriceGemini);
+            _heartbeatLogger2.default.info('bidPriceGdax: ' + bidPriceGdax);
+            _heartbeatLogger2.default.info('askPriceGemini: ' + askPriceGemini);
+            _heartbeatLogger2.default.info('askPriceGdax: ' + askPriceGdax);
+
+            _heartbeatLogger2.default.info('gdaxBasePercentageDifference: ' + gdaxBasePercentageDifference);
+            _heartbeatLogger2.default.info('geminiBasePercentageDifference: ' + geminiBasePercentageDifference);
+
             if (!gdaxRateIsHigherAndProfitable) {
-              _context2.next = 38;
+              _context2.next = 44;
               break;
             }
 
@@ -183,12 +192,12 @@ var determinePositionChange = function () {
                 rate: askPriceGemini
               }
             };
-            _context2.next = 61;
+            _context2.next = 67;
             break;
 
-          case 38:
+          case 44:
             if (!geminiRateIsSwappable) {
-              _context2.next = 59;
+              _context2.next = 65;
               break;
             }
 
@@ -229,31 +238,31 @@ var determinePositionChange = function () {
                 rate: askPriceGdax
               }
             };
-            _context2.next = 61;
+            _context2.next = 67;
             break;
 
-          case 59:
+          case 65:
             positionChange = 'none';
             return _context2.abrupt('return', positionChange);
 
-          case 61:
-            _context2.next = 63;
+          case 67:
+            _context2.next = 69;
             return determineCurrentEthereumPosition();
 
-          case 63:
+          case 69:
             exchangeWithEthereumBalance = _context2.sent;
 
             if (!(positionChange[exchangeWithEthereumBalance].action == 'sell')) {
-              _context2.next = 68;
+              _context2.next = 74;
               break;
             }
 
             return _context2.abrupt('return', positionChange);
 
-          case 68:
+          case 74:
             return _context2.abrupt('return', 'none');
 
-          case 69:
+          case 75:
           case 'end':
             return _context2.stop();
         }

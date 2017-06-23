@@ -108,6 +108,14 @@ async function determinePositionChange(orderBooks){
   let estimatedGrossProfit
   let estimatedNetProfit
 
+  heartbeatLogger.info(`bidPriceGemini: ${bidPriceGemini}`)
+  heartbeatLogger.info(`bidPriceGdax: ${bidPriceGdax}`)
+  heartbeatLogger.info(`askPriceGemini: ${askPriceGemini}`)
+  heartbeatLogger.info(`askPriceGdax: ${askPriceGdax}`)
+
+  heartbeatLogger.info(`gdaxBasePercentageDifference: ${gdaxBasePercentageDifference}`)
+  heartbeatLogger.info(`geminiBasePercentageDifference: ${geminiBasePercentageDifference}`)
+
 
   if(gdaxRateIsHigherAndProfitable){
 
