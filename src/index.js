@@ -73,9 +73,9 @@ async function main(){
     
   } catch(err){
     logger.info(`error: ${err}`)
-    geminiService.cancelOrders()
-    gdaxService.cancelOrders()
-    process.exit()
+    // geminiService.cancelOrders()
+    // gdaxService.cancelOrders()
+    // process.exit()
   } finally{
     await Promise.delay(config.timeDelta)
     main()

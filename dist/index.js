@@ -80,7 +80,7 @@ var main = function () {
             _logger2.default.info('successful ' + tradeResults.gemini.action + ' on Gemini for ' + tradeResults.gemini.amount + ' ethereum at ' + tradeResults.gemini.price + '/eth, fee of ' + tradeResults.gemini.fee);
             _logger2.default.info('profit percentage: ' + profit);
 
-            _context.next = 44;
+            _context.next = 41;
             break;
 
           case 38:
@@ -88,25 +88,25 @@ var main = function () {
             _context.t1 = _context['catch'](0);
 
             _logger2.default.info('error: ' + _context.t1);
-            geminiService.cancelOrders();
-            gdaxService.cancelOrders();
-            process.exit();
+            // geminiService.cancelOrders()
+            // gdaxService.cancelOrders()
+            // process.exit()
 
-          case 44:
-            _context.prev = 44;
-            _context.next = 47;
+          case 41:
+            _context.prev = 41;
+            _context.next = 44;
             return _bluebird2.default.delay(_config2.default.timeDelta);
 
-          case 47:
+          case 44:
             main();
-            return _context.finish(44);
+            return _context.finish(41);
 
-          case 49:
+          case 46:
           case 'end':
             return _context.stop();
         }
       }
-    }, _callee, this, [[0, 38, 44, 49]]);
+    }, _callee, this, [[0, 38, 41, 46]]);
   }));
 
   return function main() {

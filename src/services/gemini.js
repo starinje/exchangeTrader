@@ -178,9 +178,6 @@ export default class GeminiService {
             let tradeQuantity = tradeDetails.quantity
 
             while(!tradeCompleted && tradeProfitable){
-
-                
-
                 let orderBook = await this.getOrderBook()
                 
                 switch(tradeDetails.action){
@@ -288,8 +285,6 @@ export default class GeminiService {
                 process.exit()
             }
         } catch(err){
-            //this.logger.info(`gemini executeTrade |> ${err}`)
-            //return
             return Promise.reject(`gemini executeTrade |> ${err}`)
         }
     }
