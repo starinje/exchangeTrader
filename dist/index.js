@@ -11,41 +11,41 @@ var main = function () {
           case 0:
             _context.prev = 0;
 
-            console.log('');
-            console.log('');
-            _logger2.default.info('running arbitrage strategy...');
 
-            _context.next = 6;
+            _heartbeatLogger2.default.info('running arbitrage strategy...');
+
+            _context.next = 4;
             return geminiService.getOrderBook();
 
-          case 6:
+          case 4:
             orderBookGemini = _context.sent;
-            _context.next = 9;
+            _context.next = 7;
             return gdaxService.getOrderBook();
 
-          case 9:
+          case 7:
             orderBookGdax = _context.sent;
             orderBooks = {
               gdax: orderBookGdax,
               gemini: orderBookGemini
             };
-
-            //console.log(JSON.stringify(orderBooks))
-
-            _context.next = 13;
+            _context.next = 11;
             return determinePositionChange(orderBooks);
 
-          case 13:
+          case 11:
             positionChange = _context.sent;
 
             if (!(positionChange == 'none')) {
-              _context.next = 16;
+              _context.next = 14;
               break;
             }
 
             return _context.abrupt('return');
 
-          case 16:
+          case 14:
+
+            _logger2.default.info('');
+            _logger2.default.info('NEW TRADE');
+
             _context.next = 18;
             return execute(positionChange);
 
@@ -125,22 +125,10 @@ var determinePositionChange = function () {
             ethereumTradingQuantity = _config2.default.ethereumTradingQuantity;
             takeProfitTradeThreshold = _config2.default.takeProfitTradeThreshold;
             swapFundsTradeThreshold = _config2.default.swapFundsTradeThreshold;
-
-
-            console.log(takeProfitTradeThreshold);
-            console.log(swapFundsTradeThreshold);
-
             bidPriceGemini = calculateBidPrice(orderBooks.gemini.bids, ethereumTradingQuantity);
             bidPriceGdax = calculateBidPrice(orderBooks.gdax.bids, ethereumTradingQuantity);
             askPriceGemini = calculateAskPrice(orderBooks.gemini.asks, ethereumTradingQuantity);
             askPriceGdax = calculateAskPrice(orderBooks.gdax.asks, ethereumTradingQuantity);
-
-
-            _logger2.default.info('bidPriceGemini: ' + bidPriceGemini);
-            _logger2.default.info('bidPriceGdax: ' + bidPriceGdax);
-            _logger2.default.info('askPriceGemini: ' + askPriceGemini);
-            _logger2.default.info('askPriceGdax: ' + askPriceGdax);
-
             transactionPercentageGemini = _config2.default.transactionPercentageGemini;
             transactionPercentageGdax = _config2.default.transactionPercentageGdax;
             gdaxBasePercentageDifference = (bidPriceGdax - askPriceGemini) / askPriceGemini * 100;
@@ -152,14 +140,18 @@ var determinePositionChange = function () {
             estimatedGrossProfit = void 0;
             estimatedNetProfit = void 0;
 
+            if (!gdaxRateIsHigherAndProfitable) {
+              _context2.next = 38;
+              break;
+            }
+
+            _logger2.default.info('bidPriceGemini: ' + bidPriceGemini);
+            _logger2.default.info('bidPriceGdax: ' + bidPriceGdax);
+            _logger2.default.info('askPriceGemini: ' + askPriceGemini);
+            _logger2.default.info('askPriceGdax: ' + askPriceGdax);
 
             _logger2.default.info('gdaxBasePercentageDifference: ' + gdaxBasePercentageDifference);
             _logger2.default.info('geminiBasePercentageDifference: ' + geminiBasePercentageDifference);
-
-            if (!gdaxRateIsHigherAndProfitable) {
-              _context2.next = 40;
-              break;
-            }
 
             _logger2.default.info('gdax rate is higher and profitable');
 
@@ -191,15 +183,22 @@ var determinePositionChange = function () {
                 rate: askPriceGemini
               }
             };
-            _context2.next = 57;
+            _context2.next = 61;
             break;
 
-          case 40:
+          case 38:
             if (!geminiRateIsSwappable) {
-              _context2.next = 55;
+              _context2.next = 59;
               break;
             }
 
+            _logger2.default.info('bidPriceGemini: ' + bidPriceGemini);
+            _logger2.default.info('bidPriceGdax: ' + bidPriceGdax);
+            _logger2.default.info('askPriceGemini: ' + askPriceGemini);
+            _logger2.default.info('askPriceGdax: ' + askPriceGdax);
+
+            _logger2.default.info('gdaxBasePercentageDifference: ' + gdaxBasePercentageDifference);
+            _logger2.default.info('geminiBasePercentageDifference: ' + geminiBasePercentageDifference);
             _logger2.default.info('Gemini rate is higher and profitable');
 
             _totalSaleValue = bidPriceGemini * ethereumTradingQuantity;
@@ -230,31 +229,31 @@ var determinePositionChange = function () {
                 rate: askPriceGdax
               }
             };
-            _context2.next = 57;
+            _context2.next = 61;
             break;
 
-          case 55:
+          case 59:
             positionChange = 'none';
             return _context2.abrupt('return', positionChange);
 
-          case 57:
-            _context2.next = 59;
+          case 61:
+            _context2.next = 63;
             return determineCurrentEthereumPosition();
 
-          case 59:
+          case 63:
             exchangeWithEthereumBalance = _context2.sent;
 
             if (!(positionChange[exchangeWithEthereumBalance].action == 'sell')) {
-              _context2.next = 64;
+              _context2.next = 68;
               break;
             }
 
             return _context2.abrupt('return', positionChange);
 
-          case 64:
+          case 68:
             return _context2.abrupt('return', 'none');
 
-          case 65:
+          case 69:
           case 'end':
             return _context2.stop();
         }
@@ -421,6 +420,10 @@ var _gemini2 = _interopRequireDefault(_gemini);
 var _logger = require('./services/logger.js');
 
 var _logger2 = _interopRequireDefault(_logger);
+
+var _heartbeatLogger = require('./services/heartbeatLogger.js');
+
+var _heartbeatLogger2 = _interopRequireDefault(_heartbeatLogger);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 

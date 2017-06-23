@@ -196,7 +196,6 @@ export default class GeminiService {
                     })
 
                     price = parseFloat(lowestSellPriceLevel.price)
-                    console.log(`gemini buy price is: ${price}`)
 
                     if(price >= counterPrice){ //-(rateDelta/2)
                         tradeProfitable = false
@@ -215,7 +214,7 @@ export default class GeminiService {
                     })
 
                     price = parseFloat(highestBuyPriceLevel.price)
-                    console.log(`gemini sell price is: ${price}`)
+
 
                     if(price <= counterPrice){ //+(rateDelta/2)
                         tradeProfitable = false
@@ -244,7 +243,6 @@ export default class GeminiService {
                 }
 
                 let orderResults = await this.newOrder(orderParams)
-                console.log(`gemini order results: ${JSON.stringify(orderResults)}`)
 
                 if(orderResults.is_cancelled){
                     this.logger.info('gemini order could not be submitted')

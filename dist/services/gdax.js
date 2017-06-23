@@ -126,7 +126,7 @@ var GdaxService = function GdaxService(options) {
 
                                             case 8:
                                                 if (!(!tradeCompleted && tradeProfitable)) {
-                                                    _context2.next = 71;
+                                                    _context2.next = 68;
                                                     break;
                                                 }
 
@@ -136,7 +136,7 @@ var GdaxService = function GdaxService(options) {
                                             case 11:
                                                 orderBook = _context2.sent;
                                                 _context2.t0 = tradeDetails.action;
-                                                _context2.next = _context2.t0 === 'buy' ? 15 : _context2.t0 === 'sell' ? 22 : 29;
+                                                _context2.next = _context2.t0 === 'buy' ? 15 : _context2.t0 === 'sell' ? 21 : 27;
                                                 break;
 
                                             case 15:
@@ -151,10 +151,9 @@ var GdaxService = function GdaxService(options) {
 
 
                                                 price = parseFloat(lowestSellPriceLevel.price);
-                                                console.log('gdax buy price is: ' + price);
 
                                                 if (!(price >= counterPrice)) {
-                                                    _context2.next = 21;
+                                                    _context2.next = 20;
                                                     break;
                                                 }
 
@@ -162,10 +161,10 @@ var GdaxService = function GdaxService(options) {
                                                 tradeProfitable = false;
                                                 return _context2.abrupt('continue', 8);
 
-                                            case 21:
-                                                return _context2.abrupt('break', 29);
+                                            case 20:
+                                                return _context2.abrupt('break', 27);
 
-                                            case 22:
+                                            case 21:
                                                 // let highestBuyPrice = parseFloat(orderBook.bids[0].price)
                                                 // price = highestBuyPrice + .01
                                                 // let lowestSellPrice = parseFloat(orderBook.asks[0].price)
@@ -177,10 +176,9 @@ var GdaxService = function GdaxService(options) {
 
 
                                                 price = parseFloat(highestBuyPriceLevel.price);
-                                                console.log('gdax sell price is: ' + price);
 
                                                 if (!(price <= counterPrice)) {
-                                                    _context2.next = 28;
+                                                    _context2.next = 26;
                                                     break;
                                                 }
 
@@ -188,10 +186,10 @@ var GdaxService = function GdaxService(options) {
                                                 tradeProfitable = false;
                                                 return _context2.abrupt('continue', 8);
 
-                                            case 28:
-                                                return _context2.abrupt('break', 29);
+                                            case 26:
+                                                return _context2.abrupt('break', 27);
 
-                                            case 29:
+                                            case 27:
 
                                                 price = price.toFixed(2).toString();
 
@@ -210,19 +208,16 @@ var GdaxService = function GdaxService(options) {
                                                     process.exit();
                                                 }
 
-                                                _context2.next = 35;
+                                                _context2.next = 33;
                                                 return _this.newOrder(orderParams);
 
-                                            case 35:
+                                            case 33:
                                                 orderResults = _context2.sent;
 
                                                 orderResults = JSON.parse(orderResults.body);
-                                                console.log('gdax order results: ' + JSON.stringify(orderResults));
-
-                                                //TODO - need to check for order sucess - not for order failure....
 
                                                 if (!(!orderResults.hasOwnProperty('status') || !(orderResults.status == 'pending'))) {
-                                                    _context2.next = 42;
+                                                    _context2.next = 39;
                                                     break;
                                                 }
 
@@ -230,73 +225,73 @@ var GdaxService = function GdaxService(options) {
                                                 _this.logger.info(orderResults);
                                                 return _context2.abrupt('continue', 8);
 
-                                            case 42:
-                                                _context2.next = 44;
+                                            case 39:
+                                                _context2.next = 41;
                                                 return _bluebird2.default.delay(1000);
 
-                                            case 44:
+                                            case 41:
                                                 timeStart = _moment2.default.utc(new Date());
                                                 timeExpired = false;
 
 
                                                 _this.logger.info('gdax order entered - going into check status loop...');
 
-                                            case 47:
+                                            case 44:
                                                 if (!(!timeExpired && !tradeCompleted)) {
-                                                    _context2.next = 69;
+                                                    _context2.next = 66;
                                                     break;
                                                 }
 
-                                                _context2.next = 50;
+                                                _context2.next = 47;
                                                 return _bluebird2.default.delay(1000);
 
-                                            case 50:
+                                            case 47:
                                                 now = _moment2.default.utc(new Date());
                                                 timeSinceTradePlaced = _moment2.default.duration(now.diff(timeStart));
-                                                _context2.next = 54;
+                                                _context2.next = 51;
                                                 return _this.orderStatus(orderResults.id);
 
-                                            case 54:
+                                            case 51:
                                                 tradeStatus = _context2.sent;
 
                                                 if (!(tradeStatus.filled_size == tradeStatus.size)) {
-                                                    _context2.next = 61;
+                                                    _context2.next = 58;
                                                     break;
                                                 }
 
                                                 tradeCompleted = true;
                                                 finalOrderResults = orderResults;
-                                                return _context2.abrupt('continue', 47);
+                                                return _context2.abrupt('continue', 44);
 
-                                            case 61:
+                                            case 58:
                                                 tradeQuantity = parseFloat(tradeStatus.size) - parseFloat(tradeStatus.filled_size);
 
-                                            case 62:
+                                            case 59:
                                                 if (!(timeSinceTradePlaced.asMinutes() > _this.options.orderFillTime)) {
-                                                    _context2.next = 67;
+                                                    _context2.next = 64;
                                                     break;
                                                 }
 
                                                 _this.logger.info('time has expired trying to ' + tradeDetails.action + ' ' + tradeDetails.quantity + ' ethereum on gdax at ' + price + '/eth, canceling order');
-                                                _context2.next = 66;
+                                                _context2.next = 63;
                                                 return _this.cancelOrders();
 
-                                            case 66:
+                                            case 63:
                                                 timeExpired = true;
 
-                                            case 67:
-                                                _context2.next = 47;
+                                            case 64:
+                                                _context2.next = 44;
                                                 break;
 
-                                            case 69:
+                                            case 66:
                                                 _context2.next = 8;
                                                 break;
 
-                                            case 71:
+                                            case 68:
                                                 tradeSummary = void 0;
 
                                                 if (!tradeCompleted) {
-                                                    _context2.next = 77;
+                                                    _context2.next = 74;
                                                     break;
                                                 }
 
@@ -309,13 +304,13 @@ var GdaxService = function GdaxService(options) {
                                                     v: _extends({}, _tradeSummary, { action: tradeDetails.action })
                                                 });
 
-                                            case 77:
+                                            case 74:
                                                 if (!tradeProfitable) {
                                                     _this.logger.info(tradeDetails.action + ' on gdax for ' + tradeDetails.quantity + ' ethereum at ' + price + '/eth was unsuccesful - order book no longer profitable');
                                                     process.exit();
                                                 }
 
-                                            case 78:
+                                            case 75:
                                             case 'end':
                                                 return _context2.stop();
                                         }

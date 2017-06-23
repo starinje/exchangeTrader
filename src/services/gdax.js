@@ -89,8 +89,7 @@ export default class GdaxService {
                     })
 
                     price = parseFloat(lowestSellPriceLevel.price)
-                    console.log(`gdax buy price is: ${price}`)
-
+                
                     if(price >= counterPrice){ //-(rateDelta/2)
                         tradeProfitable = false
                         continue
@@ -107,7 +106,6 @@ export default class GdaxService {
                     })
 
                     price = parseFloat(highestBuyPriceLevel.price)
-                    console.log(`gdax sell price is: ${price}`)
 
                     if(price <= counterPrice){ //+(rateDelta/2)
                         tradeProfitable = false
@@ -135,9 +133,6 @@ export default class GdaxService {
 
                 let orderResults = await this.newOrder(orderParams)
                 orderResults = JSON.parse(orderResults.body)
-                console.log(`gdax order results: ${JSON.stringify(orderResults)}`)
-
-                //TODO - need to check for order sucess - not for order failure....
 
                 if(!(orderResults.hasOwnProperty('status')) || !(orderResults.status == 'pending')){
                     this.logger.info('gdax order could not be submitted')

@@ -312,7 +312,7 @@ var GeminiService = function GeminiService(options) {
 
                                             case 8:
                                                 if (!(!tradeCompleted && tradeProfitable)) {
-                                                    _context5.next = 70;
+                                                    _context5.next = 67;
                                                     break;
                                                 }
 
@@ -322,7 +322,7 @@ var GeminiService = function GeminiService(options) {
                                             case 11:
                                                 orderBook = _context5.sent;
                                                 _context5.t0 = tradeDetails.action;
-                                                _context5.next = _context5.t0 === 'buy' ? 15 : _context5.t0 === 'sell' ? 22 : 29;
+                                                _context5.next = _context5.t0 === 'buy' ? 15 : _context5.t0 === 'sell' ? 21 : 27;
                                                 break;
 
                                             case 15:
@@ -338,10 +338,9 @@ var GeminiService = function GeminiService(options) {
 
 
                                                 price = parseFloat(lowestSellPriceLevel.price);
-                                                console.log('gemini buy price is: ' + price);
 
                                                 if (!(price >= counterPrice)) {
-                                                    _context5.next = 21;
+                                                    _context5.next = 20;
                                                     break;
                                                 }
 
@@ -349,10 +348,10 @@ var GeminiService = function GeminiService(options) {
                                                 tradeProfitable = false;
                                                 return _context5.abrupt('continue', 8);
 
-                                            case 21:
-                                                return _context5.abrupt('break', 29);
+                                            case 20:
+                                                return _context5.abrupt('break', 27);
 
-                                            case 22:
+                                            case 21:
                                                 // let highestBuyPrice = parseFloat(orderBook.bids[0].price)
                                                 // price = highestBuyPrice + .01
 
@@ -365,10 +364,9 @@ var GeminiService = function GeminiService(options) {
 
 
                                                 price = parseFloat(highestBuyPriceLevel.price);
-                                                console.log('gemini sell price is: ' + price);
 
                                                 if (!(price <= counterPrice)) {
-                                                    _context5.next = 28;
+                                                    _context5.next = 26;
                                                     break;
                                                 }
 
@@ -376,10 +374,10 @@ var GeminiService = function GeminiService(options) {
                                                 tradeProfitable = false;
                                                 return _context5.abrupt('continue', 8);
 
-                                            case 28:
-                                                return _context5.abrupt('break', 29);
+                                            case 26:
+                                                return _context5.abrupt('break', 27);
 
-                                            case 29:
+                                            case 27:
 
                                                 price = price.toFixed(2).toString();
 
@@ -400,16 +398,14 @@ var GeminiService = function GeminiService(options) {
                                                     process.exit();
                                                 }
 
-                                                _context5.next = 35;
+                                                _context5.next = 33;
                                                 return _this.newOrder(orderParams);
 
-                                            case 35:
+                                            case 33:
                                                 orderResults = _context5.sent;
 
-                                                console.log('gemini order results: ' + JSON.stringify(orderResults));
-
                                                 if (!orderResults.is_cancelled) {
-                                                    _context5.next = 41;
+                                                    _context5.next = 38;
                                                     break;
                                                 }
 
@@ -417,92 +413,92 @@ var GeminiService = function GeminiService(options) {
                                                 _this.logger.info(orderResults);
                                                 return _context5.abrupt('continue', 8);
 
-                                            case 41:
-                                                _context5.next = 43;
+                                            case 38:
+                                                _context5.next = 40;
                                                 return _bluebird2.default.delay(1000);
 
-                                            case 43:
+                                            case 40:
                                                 timeStart = _moment2.default.utc(new Date());
                                                 timeExpired = false;
 
 
                                                 _this.logger.info('gemini order entered - going into check status loop...');
 
-                                            case 46:
+                                            case 43:
                                                 if (!(!timeExpired && !tradeCompleted)) {
-                                                    _context5.next = 68;
+                                                    _context5.next = 65;
                                                     break;
                                                 }
 
-                                                _context5.next = 49;
+                                                _context5.next = 46;
                                                 return _bluebird2.default.delay(1000);
 
-                                            case 49:
+                                            case 46:
                                                 now = _moment2.default.utc(new Date());
                                                 timeSinceTradePlaced = _moment2.default.duration(now.diff(timeStart));
-                                                _context5.next = 53;
+                                                _context5.next = 50;
                                                 return _this.orderStatus(orderResults.order_id);
 
-                                            case 53:
+                                            case 50:
                                                 tradeStatus = _context5.sent;
 
                                                 if (!(tradeStatus.executed_amount == tradeStatus.original_amount)) {
-                                                    _context5.next = 60;
+                                                    _context5.next = 57;
                                                     break;
                                                 }
 
                                                 tradeCompleted = true;
                                                 finalOrderResults = orderResults;
-                                                return _context5.abrupt('continue', 46);
+                                                return _context5.abrupt('continue', 43);
 
-                                            case 60:
+                                            case 57:
                                                 tradeQuantity = parseFloat(tradeStatus.original_amount) - parseFloat(tradeStatus.executed_amount);
 
-                                            case 61:
+                                            case 58:
                                                 if (!(timeSinceTradePlaced.asMinutes() > _this.options.orderFillTime)) {
-                                                    _context5.next = 66;
+                                                    _context5.next = 63;
                                                     break;
                                                 }
 
                                                 _this.logger.info('time has expired trying to ' + tradeDetails.action + ' ' + tradeDetails.quantity + ' ethereum on gemini at ' + price + '/eth, canceling order');
-                                                _context5.next = 65;
+                                                _context5.next = 62;
                                                 return _this.cancelOrders();
 
-                                            case 65:
+                                            case 62:
                                                 timeExpired = true;
 
-                                            case 66:
-                                                _context5.next = 46;
+                                            case 63:
+                                                _context5.next = 43;
                                                 break;
 
-                                            case 68:
+                                            case 65:
                                                 _context5.next = 8;
                                                 break;
 
-                                            case 70:
+                                            case 67:
                                                 tradeSummary = void 0;
 
                                                 if (!tradeCompleted) {
-                                                    _context5.next = 78;
+                                                    _context5.next = 75;
                                                     break;
                                                 }
 
-                                                _context5.next = 74;
+                                                _context5.next = 71;
                                                 return _this.orderHistory(finalOrderResults.order_id);
 
-                                            case 74:
+                                            case 71:
                                                 tradeSummary = _context5.sent;
                                                 return _context5.abrupt('return', {
                                                     v: _extends({}, tradeSummary, { action: tradeDetails.action })
                                                 });
 
-                                            case 78:
+                                            case 75:
                                                 if (!tradeProfitable) {
                                                     _this.logger.info(tradeDetails.action + ' on gemini for ' + tradeDetails.quantity + ' ethereum at ' + price + '/eth was unsuccesful - order book no longer profitable');
                                                     process.exit();
                                                 }
 
-                                            case 79:
+                                            case 76:
                                             case 'end':
                                                 return _context5.stop();
                                         }

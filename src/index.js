@@ -12,6 +12,7 @@ import config from './config'
 import GdaxService from './services/gdax'
 import GeminiService from './services/gemini'
 import logger from './services/logger.js'
+import heartbeatLogger from './services/heartbeatLogger.js'
 
 const gdaxService = new GdaxService({...config.gdax, logger, })
 const geminiService = new GeminiService({...config.gemini, logger})
@@ -21,9 +22,8 @@ main()
 async function main(){
 
   try {
-    console.log('')
-    console.log('')
-    logger.info('running arbitrage strategy...')
+   
+    heartbeatLogger.info('running arbitrage strategy...')
  
 
     let orderBookGemini = await geminiService.getOrderBook()
@@ -34,13 +34,14 @@ async function main(){
       gemini: orderBookGemini
     }
 
-    //console.log(JSON.stringify(orderBooks))
-
     let positionChange = await determinePositionChange(orderBooks)
 
     if(positionChange == 'none'){
       return 
     }
+
+    logger.info('')
+    logger.info('NEW TRADE')
     
     let tradeResults = await execute(positionChange)
 
@@ -88,18 +89,10 @@ async function determinePositionChange(orderBooks){
   const takeProfitTradeThreshold = config.takeProfitTradeThreshold
   const swapFundsTradeThreshold = config.swapFundsTradeThreshold
 
-  console.log(takeProfitTradeThreshold)
-  console.log(swapFundsTradeThreshold)
-
   let bidPriceGemini = calculateBidPrice(orderBooks.gemini.bids, ethereumTradingQuantity)
   let bidPriceGdax = calculateBidPrice(orderBooks.gdax.bids, ethereumTradingQuantity)
   let askPriceGemini = calculateAskPrice(orderBooks.gemini.asks, ethereumTradingQuantity)
   let askPriceGdax = calculateAskPrice(orderBooks.gdax.asks, ethereumTradingQuantity)
-
-  logger.info(`bidPriceGemini: ${bidPriceGemini}`)
-  logger.info(`bidPriceGdax: ${bidPriceGdax}`)
-  logger.info(`askPriceGemini: ${askPriceGemini}`)
-  logger.info(`askPriceGdax: ${askPriceGdax}`)
 
   const transactionPercentageGemini = config.transactionPercentageGemini
   const transactionPercentageGdax = config.transactionPercentageGdax
@@ -115,10 +108,17 @@ async function determinePositionChange(orderBooks){
   let estimatedGrossProfit
   let estimatedNetProfit
 
-  logger.info(`gdaxBasePercentageDifference: ${gdaxBasePercentageDifference}`)
-  logger.info(`geminiBasePercentageDifference: ${geminiBasePercentageDifference}`)
 
   if(gdaxRateIsHigherAndProfitable){
+
+    logger.info(`bidPriceGemini: ${bidPriceGemini}`)
+    logger.info(`bidPriceGdax: ${bidPriceGdax}`)
+    logger.info(`askPriceGemini: ${askPriceGemini}`)
+    logger.info(`askPriceGdax: ${askPriceGdax}`)
+
+    logger.info(`gdaxBasePercentageDifference: ${gdaxBasePercentageDifference}`)
+    logger.info(`geminiBasePercentageDifference: ${geminiBasePercentageDifference}`)
+
     logger.info('gdax rate is higher and profitable')
 
     let totalSaleValue = bidPriceGdax*ethereumTradingQuantity
@@ -149,6 +149,13 @@ async function determinePositionChange(orderBooks){
       }
     }
   } else if (geminiRateIsSwappable) {
+    logger.info(`bidPriceGemini: ${bidPriceGemini}`)
+    logger.info(`bidPriceGdax: ${bidPriceGdax}`)
+    logger.info(`askPriceGemini: ${askPriceGemini}`)
+    logger.info(`askPriceGdax: ${askPriceGdax}`)
+
+    logger.info(`gdaxBasePercentageDifference: ${gdaxBasePercentageDifference}`)
+    logger.info(`geminiBasePercentageDifference: ${geminiBasePercentageDifference}`)
     logger.info('Gemini rate is higher and profitable')
 
     let totalSaleValue = bidPriceGemini*ethereumTradingQuantity
