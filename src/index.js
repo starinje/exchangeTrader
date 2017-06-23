@@ -73,6 +73,7 @@ async function main(){
     await determineCurrentEthereumPosition()
     
   } catch(err){
+    heartbeatLogger.info(`error: ${err}`)
     logger.info(`error: ${err}`)
     // geminiService.cancelOrders()
     // gdaxService.cancelOrders()
