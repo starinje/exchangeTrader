@@ -70,6 +70,7 @@ async function main(){
     logger.info(`successful ${tradeResults.gdax.action} on Gdax for ${tradeResults.gdax.amount} ethereum at $${tradeResults.gdax.price}/eth, fee of ${tradeResults.gdax.fee}`)
     logger.info(`successful ${tradeResults.gemini.action} on Gemini for ${tradeResults.gemini.amount} ethereum at ${tradeResults.gemini.price}/eth, fee of ${tradeResults.gemini.fee}`)
     logger.info(`profit percentage: ${profit}`)
+    await determineCurrentEthereumPosition()
     
   } catch(err){
     logger.info(`error: ${err}`)
