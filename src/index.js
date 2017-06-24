@@ -202,7 +202,9 @@ async function determinePositionChange(orderBooks){
 
   let exchangeWithEthereumBalance = await determineCurrentEthereumPosition()
 
-  if(positionChange[exchangeWithEthereumBalance].action == 'sell'){
+  if(exchangeWithEthereumBalance == 'either'){
+    return positionChange
+  } else if(positionChange[exchangeWithEthereumBalance].action == 'sell'){
     return positionChange
   } else {
     return 'none'
@@ -248,12 +250,23 @@ async function determineCurrentEthereumPosition(){
   logger.info(`gdaxEthBalance: ${gdaxEthBalance}`)
   logger.info(`gdaxUsdBalance: ${gdaxUsdBalance}`)
 
+  const ethereumTradingQuantity = config.ethereumTradingQuantity
   let ethereumBalance
-  if(geminiEthBalance > gdaxEthBalance){
+
+
+  if(geminiEthBalance >= ethereumTradingQuantity && gdaxEthBalance >= ethereumTradingQuantity){
+      ethereumBalance = 'either'
+  } else if(geminiEthBalance >= gdaxEthBalance){
     ethereumBalance = 'gemini'
-  } else if (gdaxEthBalance > geminiEthBalance){
+  } else if(gdaxEthBalance >= geminiEthBalance){
     ethereumBalance = 'gdax'
   }
+
+  // if(geminiEthBalance > gdaxEthBalance){
+  //   ethereumBalance = 'gemini'
+  // } else if (gdaxEthBalance > geminiEthBalance){
+  //   ethereumBalance = 'gdax'
+  // }
 
   logger.info(`ethereum balance is in ${ethereumBalance}`)
 
