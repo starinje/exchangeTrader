@@ -3,7 +3,7 @@ cryptocurrency arbitrage trader
 
 TO RUN CODE:
 
-cd /exchangeTrader
-npm install 
-npm run build
-npm run start
+cd /exchangeTrader <br />
+npm install <br />
+npm run build <br />
+npm run start <br />
